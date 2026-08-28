@@ -11,8 +11,9 @@ import {
 import { ResumeSheet } from "#/components/resume-preview/templates";
 import { setPersister, useBuilderStore } from "#/lib/builder-store";
 import { exportResumeToPdf } from "#/lib/pdf-export";
-import { getResume, updateResume } from "#/lib/resume-functions";
+import { getResume, listTemplates, updateResume } from "#/lib/resume-functions";
 import { parseResumeData } from "#/lib/resume-schema";
+import { DEFAULT_THEME } from "#/lib/templates";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/dashboard/$resumeId")({
@@ -25,6 +26,10 @@ function Builder() {
 	const { data: resume } = useQuery({
 		queryKey: ["resume", resumeId],
 		queryFn: () => getResume({ data: resumeId }),
+	});
+	const { data: templateList } = useQuery({
+		queryKey: ["templates"],
+		queryFn: () => listTemplates(),
 	});
 
 	const load = useBuilderStore((s) => s.load);
@@ -55,6 +60,7 @@ function Builder() {
 	const setTemplate = useBuilderStore((s) => s.setTemplate);
 	const [exporting, setExporting] = useState(false);
 	const [exportError, setExportError] = useState(false);
+	const active = templateList?.find((t) => t.id === template);
 
 	if (!resume) return <div className="p-10 text-neutral-400">…</div>;
 
@@ -80,9 +86,14 @@ function Builder() {
 						value={template}
 						onChange={(e) => setTemplate(e.target.value)}
 					>
-						<option value="modern">Modern</option>
-						<option value="classic">Classic</option>
-						<option value="minimal">Minimal</option>
+						{/* The saved template may be deactivated; keep it selectable so
+						    switching away is a choice, not a forced silent change. */}
+						{!active && <option value={template}>{template}</option>}
+						{templateList?.map((t) => (
+							<option key={t.id} value={t.id}>
+								{t.name}
+							</option>
+						))}
 					</select>
 				</div>
 				<span className="text-xs text-neutral-500" aria-live="polite">
@@ -131,7 +142,8 @@ function Builder() {
 					<div className="resume-sheet" id="resume-sheet">
 						<ResumeSheet
 							data={data}
-							template={template}
+							layout={active?.layout ?? template}
+							theme={active?.theme ?? DEFAULT_THEME}
 							presentLabel={m.builder_present()}
 						/>
 					</div>

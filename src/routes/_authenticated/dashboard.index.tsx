@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { ResumeMeta } from "#/lib/resume-functions";
+import type { ResumeMeta, TemplateOption } from "#/lib/resume-functions";
 import {
 	createResume,
 	deleteResume,
 	listResumes,
+	listTemplates,
 } from "#/lib/resume-functions";
 import { m } from "#/paraglide/messages";
 
@@ -18,6 +19,10 @@ function Dashboard() {
 	const { data: resumes = [], isPending } = useQuery({
 		queryKey: ["resumes"],
 		queryFn: listResumes,
+	});
+	const { data: templates = [] } = useQuery({
+		queryKey: ["templates"],
+		queryFn: () => listTemplates(),
 	});
 
 	const create = useMutation({
@@ -78,6 +83,7 @@ function Dashboard() {
 						<ResumeCard
 							key={r.id}
 							resume={r}
+							template={templates.find((t) => t.id === r.template)}
 							onOpen={() =>
 								navigate({
 									to: "/dashboard/$resumeId",
@@ -97,10 +103,12 @@ function Dashboard() {
 
 function ResumeCard({
 	resume,
+	template,
 	onOpen,
 	onDelete,
 }: {
 	resume: ResumeMeta;
+	template?: TemplateOption;
 	onOpen: () => void;
 	onDelete: () => void;
 }) {
@@ -108,7 +116,10 @@ function ResumeCard({
 		<div className="card group flex flex-col p-5 transition-colors hover:border-neutral-600">
 			<button type="button" onClick={onOpen} className="text-left">
 				<div className="flex h-24 items-end overflow-hidden rounded-lg border border-neutral-800 bg-neutral-950 p-3">
-					<MiniResumeSkeleton template={resume.template} />
+					<MiniResumeSkeleton
+						layout={template?.layout ?? resume.template}
+						accent={template?.theme.accent ?? "#525252"}
+					/>
 				</div>
 				<h3 className="mt-4 font-semibold text-white group-hover:text-brand-300">
 					{resume.title}
@@ -118,7 +129,7 @@ function ResumeCard({
 				{m.dash_last_edited({
 					date: new Date(resume.updatedAt).toLocaleDateString(),
 				})}{" "}
-				· {resume.template}
+				· {template?.name ?? resume.template}
 			</div>
 			<div className="mt-4 flex items-center gap-2 border-t border-neutral-800 pt-3">
 				<button type="button" onClick={onOpen} className="btn-ghost">
@@ -136,38 +147,73 @@ function ResumeCard({
 	);
 }
 
-/** Tiny static layout hint of the template — not the real preview. */
-function MiniResumeSkeleton({ template }: { template: string }) {
-	if (template === "classic") {
+/**
+ * Tiny layout hint tinted with the template's accent — not the real preview.
+ * Rendering the actual sheet at thumbnail size costs a full layout pass per card.
+ */
+function MiniResumeSkeleton({
+	layout,
+	accent,
+}: {
+	layout: string;
+	accent: string;
+}) {
+	const bar = "h-1 bg-neutral-800";
+	const lines = (
+		<>
+			<div className={`${bar} w-full`} />
+			<div className={`${bar} w-5/6`} />
+			<div className={`${bar} w-2/3`} />
+		</>
+	);
+	// Two-column layouts get a rail; banner layouts get a filled top strip;
+	// everything else is a single stack under a heading.
+	if (layout === "modern" || layout === "sidebar") {
 		return (
-			<div className="w-full space-y-1.5">
-				<div className="h-1.5 w-2/3 border-b border-neutral-600 pb-1" />
-				<div className="h-1 w-full bg-neutral-800" />
-				<div className="h-1 w-5/6 bg-neutral-800" />
+			<div className="flex w-full gap-2">
+				<div className="w-1/3 space-y-1.5 pr-2">
+					<div className="h-1.5 w-full" style={{ background: accent }} />
+					<div className={`${bar} w-3/4`} />
+					<div className={`${bar} w-full`} />
+				</div>
+				<div className="flex-1 space-y-1.5">{lines}</div>
 			</div>
 		);
 	}
-	if (template === "minimal") {
+	if (layout === "editorial") {
 		return (
 			<div className="w-full space-y-1.5">
-				<div className="h-1.5 w-1/2 bg-neutral-600" />
-				<div className="h-1 w-full bg-neutral-800" />
-				<div className="h-1 w-2/3 bg-neutral-800" />
+				<div className="h-4 w-full rounded-sm" style={{ background: accent }} />
+				{lines}
 			</div>
 		);
 	}
-	// modern: left accent bar
+	if (layout === "timeline") {
+		return (
+			<div className="flex w-full gap-2">
+				<div className="w-px self-stretch" style={{ background: accent }} />
+				<div className="flex-1 space-y-1.5">{lines}</div>
+			</div>
+		);
+	}
+	if (layout === "elegant") {
+		return (
+			<div className="w-full space-y-1.5">
+				<div className="mx-auto h-1.5 w-1/2" style={{ background: accent }} />
+				<div className="mx-auto h-px w-8" style={{ background: accent }} />
+				<div className={`${bar} w-full`} />
+				<div className={`${bar} w-5/6`} />
+			</div>
+		);
+	}
+	// classic, minimal, swiss and any future single-column layout
 	return (
-		<div className="flex w-full gap-2">
-			<div className="w-1/3 space-y-1.5 border-r border-neutral-800 pr-2">
-				<div className="h-1.5 w-full bg-neutral-700" />
-				<div className="h-1 w-3/4 bg-neutral-800" />
-			</div>
-			<div className="flex-1 space-y-1.5">
-				<div className="h-1.5 w-2/3 bg-neutral-700" />
-				<div className="h-1 w-full bg-neutral-800" />
-				<div className="h-1 w-5/6 bg-neutral-800" />
-			</div>
+		<div className="w-full space-y-1.5">
+			<div
+				className={layout === "swiss" ? "h-2 w-3/4" : "h-1.5 w-1/2"}
+				style={{ background: accent }}
+			/>
+			{lines}
 		</div>
 	);
 }

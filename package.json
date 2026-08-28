@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
+    "db:seed": "tsx src/db/seed-templates.ts",
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio"
   },

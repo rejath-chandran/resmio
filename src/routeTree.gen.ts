@@ -10,17 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ApiPdfRouteImport } from './routes/api/pdf'
+import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
+import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
 import { Route as AuthenticatedDashboardResumeIdRouteImport } from './routes/_authenticated/dashboard.$resumeId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AdminAdminTemplatesIndexRouteImport } from './routes/_admin/admin.templates.index'
+import { Route as AdminAdminTemplatesTemplateIdRouteImport } from './routes/_admin/admin.templates.$templateId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -42,6 +51,16 @@ const ApiPdfRoute = ApiPdfRouteImport.update({
   path: '/api/pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AuthenticatedDashboardIndexRoute =
   AuthenticatedDashboardIndexRouteImport.update({
     id: '/dashboard/',
@@ -59,35 +78,60 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAdminTemplatesIndexRoute =
+  AdminAdminTemplatesIndexRouteImport.update({
+    id: '/admin/templates/',
+    path: '/admin/templates/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminAdminTemplatesTemplateIdRoute =
+  AdminAdminTemplatesTemplateIdRouteImport.update({
+    id: '/admin/templates/$templateId',
+    path: '/admin/templates/$templateId',
+    getParentRoute: () => AdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/admin/': typeof AdminAdminIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/admin/templates/$templateId': typeof AdminAdminTemplatesTemplateIdRoute
+  '/admin/templates/': typeof AdminAdminTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/admin': typeof AdminAdminIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
+  '/admin/templates/$templateId': typeof AdminAdminTemplatesTemplateIdRoute
+  '/admin/templates': typeof AdminAdminTemplatesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_admin': typeof AdminRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/_admin/admin/templates/$templateId': typeof AdminAdminTemplatesTemplateIdRoute
+  '/_admin/admin/templates/': typeof AdminAdminTemplatesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,32 +140,46 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/api/pdf'
+    | '/admin/users'
     | '/dashboard/$resumeId'
     | '/api/auth/$'
+    | '/admin/'
     | '/dashboard/'
+    | '/admin/templates/$templateId'
+    | '/admin/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/signup'
     | '/api/pdf'
+    | '/admin/users'
     | '/dashboard/$resumeId'
     | '/api/auth/$'
+    | '/admin'
     | '/dashboard'
+    | '/admin/templates/$templateId'
+    | '/admin/templates'
   id:
     | '__root__'
     | '/'
+    | '/_admin'
     | '/_authenticated'
     | '/login'
     | '/signup'
     | '/api/pdf'
+    | '/_admin/admin/users'
     | '/_authenticated/dashboard/$resumeId'
     | '/api/auth/$'
+    | '/_admin/admin/'
     | '/_authenticated/dashboard/'
+    | '/_admin/admin/templates/$templateId'
+    | '/_admin/admin/templates/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
@@ -136,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -166,6 +231,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/admin/': {
+      id: '/_admin/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/users': {
+      id: '/_admin/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminAdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_authenticated/dashboard/': {
       id: '/_authenticated/dashboard/'
       path: '/dashboard'
@@ -187,8 +266,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/admin/templates/': {
+      id: '/_admin/admin/templates/'
+      path: '/admin/templates'
+      fullPath: '/admin/templates/'
+      preLoaderRoute: typeof AdminAdminTemplatesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/templates/$templateId': {
+      id: '/_admin/admin/templates/$templateId'
+      path: '/admin/templates/$templateId'
+      fullPath: '/admin/templates/$templateId'
+      preLoaderRoute: typeof AdminAdminTemplatesTemplateIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminAdminUsersRoute: typeof AdminAdminUsersRoute
+  AdminAdminIndexRoute: typeof AdminAdminIndexRoute
+  AdminAdminTemplatesTemplateIdRoute: typeof AdminAdminTemplatesTemplateIdRoute
+  AdminAdminTemplatesIndexRoute: typeof AdminAdminTemplatesIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminUsersRoute: AdminAdminUsersRoute,
+  AdminAdminIndexRoute: AdminAdminIndexRoute,
+  AdminAdminTemplatesTemplateIdRoute: AdminAdminTemplatesTemplateIdRoute,
+  AdminAdminTemplatesIndexRoute: AdminAdminTemplatesIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardResumeIdRoute: typeof AuthenticatedDashboardResumeIdRoute
@@ -206,6 +315,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,

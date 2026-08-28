@@ -9,6 +9,8 @@ export const user = sqliteTable("user", {
 		.notNull()
 		.default(false),
 	image: text(),
+	// "user" | "admin" — see src/lib/auth-functions.ts for ADMIN_EMAILS bootstrap.
+	role: text().notNull().default("user"),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),
@@ -68,6 +70,24 @@ export const verification = sqliteTable("verification", {
 	identifier: text().notNull(),
 	value: text().notNull(),
 	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
+/** Resume templates: a layout engine id (code) + a theme (data). */
+export const templates = sqliteTable("templates", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	description: text().notNull().default(""),
+	layout: text().notNull(),
+	theme: text().notNull().default("{}"),
+	isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+	isPro: integer("is_pro", { mode: "boolean" }).notNull().default(false),
+	sortOrder: integer("sort_order").notNull().default(0),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),

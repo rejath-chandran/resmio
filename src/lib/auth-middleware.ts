@@ -16,3 +16,14 @@ export const authMiddleware = createMiddleware().server(async ({ next }) => {
 	}
 	return next({ context: { user: session.user } });
 });
+
+/** Every admin server function must use this — the route guard only hides UI. */
+export const adminMiddleware = createMiddleware()
+	.middleware([authMiddleware])
+	.server(async ({ next, context }) => {
+		// Imported here, not at module scope: see the note in src/lib/roles.ts.
+		const { resolveRole } = await import("#/lib/roles");
+		const role = await resolveRole(context.user.id, context.user.email);
+		if (role !== "admin") throw new Error("Forbidden");
+		return next({ context: { user: context.user } });
+	});

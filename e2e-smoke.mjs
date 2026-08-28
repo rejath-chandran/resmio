@@ -33,8 +33,13 @@ await page.waitForURL("**/dashboard", { timeout: 15000 });
 check("signup redirects to dashboard", page.url().includes("/dashboard"));
 
 // 4. Dashboard empty state
-await page.waitForTimeout(1000);
-const emptyVisible = await page.locator("text=No resumes yet").isVisible().catch(() => false);
+// Wait for the state, don't sleep at it — a cold dev-mode chunk compile can take
+// several seconds and a fixed timeout made this flake.
+const emptyVisible = await page
+	.locator("text=No resumes yet")
+	.waitFor({ timeout: 15000 })
+	.then(() => true)
+	.catch(() => false);
 check("dashboard empty state", emptyVisible);
 
 // 5. Create resume

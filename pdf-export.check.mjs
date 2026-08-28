@@ -93,6 +93,40 @@ assert.notEqual(ink.color, "rgb(255, 255, 255)", "white-on-white text");
 assert.ok(ink.w > 0 && ink.h > 0, `zero-size text box: ${JSON.stringify(ink)}`);
 await probe.close();
 
+// 5b. A themed template's accent must survive the outerHTML clone. Themes are
+//     inline CSS custom properties precisely because Tailwind can't compile
+//     dynamic colours and cloned markup carries no <style> of its own.
+await page.selectOption("select", "swiss"); // seeded accent #dc2626
+await page.waitForTimeout(600);
+const themed = await page.evaluate(() => ({
+	content: document.getElementById("resume-sheet").outerHTML,
+}));
+assert.match(
+	themed.content,
+	/--t-accent:\s*#dc2626/i,
+	"accent var missing from cloned markup",
+);
+
+const accentProbe = await browser.newPage();
+await accentProbe.emulateMedia({ media: "print" });
+await accentProbe.setContent(
+	`<!doctype html><html><head><meta charset="utf-8"><style>${payload.styles}</style></head><body>${themed.content}</body></html>`,
+);
+const accentUsed = await accentProbe.evaluate(() =>
+	[...document.querySelectorAll("*")].some((n) => {
+		const cs = getComputedStyle(n);
+		return (
+			cs.backgroundColor === "rgb(220, 38, 38)" ||
+			cs.borderBottomColor === "rgb(220, 38, 38)" ||
+			cs.color === "rgb(220, 38, 38)"
+		);
+	}),
+);
+assert.ok(accentUsed, "theme accent never resolved to a painted colour");
+await accentProbe.close();
+await page.selectOption("select", "modern");
+await page.waitForTimeout(600);
+
 // 6. Real export returns a PDF that is materially bigger than an empty sheet,
 //    which is what a blank render collapses to.
 const post = (data) => page.request.post(`${BASE}/api/pdf`, { data });

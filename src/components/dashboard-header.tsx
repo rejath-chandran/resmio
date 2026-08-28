@@ -6,7 +6,7 @@ import { m } from "#/paraglide/messages";
 export function DashboardHeader({
 	user,
 }: {
-	user: { name: string; email: string };
+	user: { name: string; email: string; role?: string };
 }) {
 	return (
 		<header className="flex items-center justify-between border-b border-neutral-800 bg-neutral-950 px-6 py-4">
@@ -24,6 +24,15 @@ export function DashboardHeader({
 				>
 					{m.nav_dashboard()}
 				</Link>
+				{user.role === "admin" && (
+					<Link
+						to="/admin"
+						className="text-sm text-brand-400 transition-colors hover:text-brand-300"
+						activeProps={{ className: "text-brand-300" }}
+					>
+						Admin
+					</Link>
+				)}
 			</div>
 			<div className="flex items-center gap-4">
 				<span className="hidden text-sm text-neutral-400 sm:block">
