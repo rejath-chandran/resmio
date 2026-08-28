@@ -154,28 +154,21 @@ body {
   box-shadow: 0 25px 60px -15px rgb(0 0 0 / 0.5);
 }
 
-/* ---------- Print / PDF export ---------- */
+/* ---------- Print / PDF export ----------
+   The PDF renderer (src/routes/api/pdf.ts) sends a document containing only
+   the sheet, so these rules just normalize page geometry. Do NOT reintroduce a
+   `body :not(...) *  { visibility: hidden }` hack: it outranks any
+   `.print-root *` override on specificity and blanks the whole export. */
 
 @media print {
   @page {
     size: A4;
     margin: 0;
   }
+  html,
   body {
+    margin: 0;
     background: white;
-  }
-  /* Hide everything except the resume sheet during export */
-  body :not(.resume-sheet-print-root) * {
-    visibility: hidden;
-  }
-  .resume-sheet-print-root,
-  .resume-sheet-print-root * {
-    visibility: visible;
-  }
-  .resume-sheet-print-root {
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: 100%;
   }
   .resume-sheet {
     width: 100%;

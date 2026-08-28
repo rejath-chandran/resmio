@@ -8,6 +8,10 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
+	// playwright is server-only (PDF export) and ships native binaries that
+	// dependency optimization can't parse — keep it out of the bundle graph.
+	optimizeDeps: { exclude: ["playwright"] },
+	ssr: { external: ["playwright"] },
 	plugins: [
 		devtools(),
 		paraglideVitePlugin({

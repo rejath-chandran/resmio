@@ -142,5 +142,7 @@
 	"builder_back": "Zurück zum Dashboard",
 	"builder_template": "Vorlage",
 	"builder_download": "PDF herunterladen",
+	"builder_exporting": "Wird exportiert…",
+	"builder_export_failed": "Export fehlgeschlagen — bitte erneut versuchen.",
 	"builder_present": "Heute"
 }

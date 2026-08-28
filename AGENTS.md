@@ -101,3 +101,10 @@ tanstackIntent:
     run: "npx @tanstack/intent@latest load dotenv#dotenvx"
     for: "Use dotenvx to run commands with environment variables, manage multiple .env files, expand variables, and encrypt env files for safe commits and CI/CD."
 <!-- intent-skills:end -->
+
+## Project log
+
+`IMPLEMENTATION.md` is the resume point for this project. Read it before starting
+work — it records current state, deliberate simplifications, and the mistakes that
+already cost time. Append a dated entry to its Changelog for each change that lands,
+and keep its "Current state" section describing now rather than history.

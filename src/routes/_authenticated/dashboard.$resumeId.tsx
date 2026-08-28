@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
 	BasicsSection,
@@ -10,6 +10,7 @@ import {
 } from "#/components/builder/editor";
 import { ResumeSheet } from "#/components/resume-preview/templates";
 import { setPersister, useBuilderStore } from "#/lib/builder-store";
+import { exportResumeToPdf } from "#/lib/pdf-export";
 import { getResume, updateResume } from "#/lib/resume-functions";
 import { parseResumeData } from "#/lib/resume-schema";
 import { m } from "#/paraglide/messages";
@@ -52,6 +53,8 @@ function Builder() {
 	const status = useBuilderStore((s) => s.status);
 	const setTitle = useBuilderStore((s) => s.setTitle);
 	const setTemplate = useBuilderStore((s) => s.setTemplate);
+	const [exporting, setExporting] = useState(false);
+	const [exportError, setExportError] = useState(false);
 
 	if (!resume) return <div className="p-10 text-neutral-400">…</div>;
 
@@ -91,11 +94,28 @@ function Builder() {
 				</span>
 				<button
 					type="button"
-					onClick={() => window.print()}
+					disabled={exporting}
+					onClick={async () => {
+						setExporting(true);
+						setExportError(false);
+						try {
+							await exportResumeToPdf("resume-sheet", title);
+						} catch (err) {
+							console.error("PDF export failed:", err);
+							setExportError(true);
+						} finally {
+							setExporting(false);
+						}
+					}}
 					className="btn-primary ml-auto"
 				>
-					↓ {m.builder_download()}
+					↓ {exporting ? m.builder_exporting() : m.builder_download()}
 				</button>
+				{exportError && (
+					<span className="text-xs text-red-400" role="alert">
+						{m.builder_export_failed()}
+					</span>
+				)}
 			</div>
 
 			<div className="flex flex-1 items-start justify-center gap-8 overflow-auto p-6 lg:flex-row flex-col">
@@ -108,7 +128,7 @@ function Builder() {
 				</div>
 				{/* Live A4 preview */}
 				<div className="resume-sheet-print-root sticky top-20 origin-top scale-[0.85] xl:scale-100">
-					<div className="resume-sheet">
+					<div className="resume-sheet" id="resume-sheet">
 						<ResumeSheet
 							data={data}
 							template={template}

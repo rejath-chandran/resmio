@@ -142,5 +142,7 @@
 	"builder_back": "Back to dashboard",
 	"builder_template": "Template",
 	"builder_download": "Download PDF",
+	"builder_exporting": "Exporting…",
+	"builder_export_failed": "Export failed — please try again.",
 	"builder_present": "Present"
 }
