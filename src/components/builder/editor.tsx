@@ -423,3 +423,148 @@ export function SkillsSection() {
 		</section>
 	);
 }
+
+export function ProjectsSection() {
+	const data = useBuilderStore((s) => s.data);
+	const update = useBuilderStore((s) => s.update);
+
+	const add = () =>
+		update((d) =>
+			d.projects.push({
+				id: crypto.randomUUID(),
+				name: "",
+				url: "",
+				description: "",
+			}),
+		);
+	const patch = (id: string, p: Partial<ResumeData["projects"][number]>) =>
+		update((d) => {
+			const e = d.projects.find((x) => x.id === id);
+			if (e) Object.assign(e, p);
+		});
+
+	return (
+		<section className="card p-6">
+			<div className="flex items-center justify-between">
+				<h2 className="font-display text-lg font-semibold text-white">
+					{m.builder_projects()}
+				</h2>
+				<button type="button" onClick={add} className="btn-ghost">
+					+ {m.builder_add_project()}
+				</button>
+			</div>
+			<div className="mt-4 space-y-4">
+				{data.projects.map((p) => (
+					<div
+						key={p.id}
+						className="rounded-xl border border-neutral-800 bg-neutral-950/50 p-4"
+					>
+						<div className="flex items-start justify-between gap-2">
+							<div className="grid flex-1 gap-3 sm:grid-cols-2">
+								<Field
+									label={m.builder_project_name()}
+									value={p.name}
+									onChange={(v) => patch(p.id, { name: v })}
+								/>
+								<Field
+									label={m.builder_link_url()}
+									value={p.url}
+									onChange={(v) => patch(p.id, { url: v })}
+									placeholder="https://"
+								/>
+							</div>
+							<button
+								type="button"
+								aria-label={m.dash_delete()}
+								onClick={() =>
+									update((d) => {
+										d.projects = d.projects.filter((x) => x.id !== p.id);
+									})
+								}
+								className="btn-ghost hover:text-red-400"
+							>
+								✕
+							</button>
+						</div>
+						<div className="mt-3">
+							<div className="flex items-center justify-between">
+								<span className="label">{m.builder_project_desc()}</span>
+								<AiImproveButton
+									text={p.description}
+									kind="summary"
+									onDone={(t) => patch(p.id, { description: t })}
+								/>
+							</div>
+							<textarea
+								className="input min-h-16 resize-y"
+								value={p.description}
+								aria-label={m.builder_project_desc()}
+								onChange={(e) => patch(p.id, { description: e.target.value })}
+							/>
+						</div>
+					</div>
+				))}
+			</div>
+		</section>
+	);
+}
+
+export function LinksSection() {
+	const data = useBuilderStore((s) => s.data);
+	const update = useBuilderStore((s) => s.update);
+
+	const add = () =>
+		update((d) =>
+			d.links.push({ id: crypto.randomUUID(), label: "", url: "" }),
+		);
+	const patch = (id: string, p: Partial<ResumeData["links"][number]>) =>
+		update((d) => {
+			const e = d.links.find((x) => x.id === id);
+			if (e) Object.assign(e, p);
+		});
+
+	return (
+		<section className="card p-6">
+			<div className="flex items-center justify-between">
+				<h2 className="font-display text-lg font-semibold text-white">
+					{m.builder_links()}
+				</h2>
+				<button type="button" onClick={add} className="btn-ghost">
+					+ {m.builder_add_link()}
+				</button>
+			</div>
+			<div className="mt-4 space-y-3">
+				{data.links.map((l) => (
+					<div key={l.id} className="flex items-start gap-2">
+						<div className="grid flex-1 gap-3 sm:grid-cols-2">
+							<Field
+								label={m.builder_link_label()}
+								value={l.label}
+								onChange={(v) => patch(l.id, { label: v })}
+								placeholder="GitHub"
+							/>
+							<Field
+								label={m.builder_link_url()}
+								value={l.url}
+								onChange={(v) => patch(l.id, { url: v })}
+								placeholder="https://"
+							/>
+						</div>
+						<button
+							type="button"
+							aria-label={m.dash_delete()}
+							onClick={() =>
+								update((d) => {
+									d.links = d.links.filter((x) => x.id !== l.id);
+								})
+							}
+							className="btn-ghost hover:text-red-400"
+						>
+							✕
+						</button>
+					</div>
+				))}
+			</div>
+		</section>
+	);
+}

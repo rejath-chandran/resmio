@@ -197,3 +197,28 @@ a server-fn file that any client component imports must export *only* server fns
 plain `db`-touching helper belongs in a separate server-only module. e2e-smoke back to
 18/18. (If the dev log ever balloons again, `ls -lh` the log and `df -h /` before
 anything else — a client-bundle db leak is the likely cause.)
+
+### 2026-08-30 — Projects & Links sections (+ AI on project descriptions)
+
+Added two new resume sections to the model and builder.
+
+- **Model** (`src/lib/resume-schema.ts`): `projects[]` `{id,name,url,description}`
+  and `links[]` `{id,label,url}`; added to `emptyResume()` and validated by new
+  `parseProjects` (cap 20; name≤120, url≤200, desc≤600) / `parseLinks` (cap 15;
+  label≤60, url≤200). Store default (`builder-store.ts`) seeds both as `[]`.
+- **Render** (`resume-preview/shared.tsx` + `layouts.tsx`): new `ProjectsList`
+  component and `contactWithLinks(data)` helper (contact line + link URLs). All 8
+  layouts now render a Projects `<Sec>` after Experience (per-layout variant) and use
+  `contactWithLinks`; `contactList` is now only used internally by the helper.
+- **Editor** (`components/builder/editor.tsx`): `ProjectsSection` (name/url fields +
+  description textarea with the existing `AiImproveButton kind="summary"`) and
+  `LinksSection` (label/url, add/remove). Wired into `dashboard.$resumeId.tsx`.
+- **i18n**: added `builder_projects/_add_project/_project_name/_project_desc/
+  _links/_add_link/_link_label/_link_url` to `messages/en.json` + `de.json`; recompiled
+  paraglide. Sample resume (`sample-resume.ts`) gained a project + two links for preview.
+
+Verify: `npx tsc --noEmit`, `npx biome check src`, `npm run build` all green.
+`node ./e2e-smoke.mjs` = **18/18** when run against a dev server with no
+`OPENAI_API_KEY` (the "ai fallback rewrite" check asserts the local `worked on`→
+`developed` rewrite; with a real key set in `.env.local` the model returns a different
+rewrite and that one check reads 17/18 — an env condition, not a regression).

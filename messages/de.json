@@ -144,5 +144,13 @@
 	"builder_download": "PDF herunterladen",
 	"builder_exporting": "Wird exportiert…",
 	"builder_export_failed": "Export fehlgeschlagen — bitte erneut versuchen.",
-	"builder_present": "Heute"
+	"builder_present": "Heute",
+	"builder_projects": "Projekte",
+	"builder_add_project": "Projekt hinzufügen",
+	"builder_project_name": "Projektname",
+	"builder_project_desc": "Beschreibung",
+	"builder_links": "Links",
+	"builder_add_link": "Link hinzufügen",
+	"builder_link_label": "Bezeichnung",
+	"builder_link_url": "URL"
 }

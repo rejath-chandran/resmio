@@ -144,5 +144,13 @@
 	"builder_download": "Download PDF",
 	"builder_exporting": "Exporting…",
 	"builder_export_failed": "Export failed — please try again.",
-	"builder_present": "Present"
+	"builder_present": "Present",
+	"builder_projects": "Projects",
+	"builder_add_project": "Add project",
+	"builder_project_name": "Project name",
+	"builder_project_desc": "Description",
+	"builder_links": "Links",
+	"builder_add_link": "Add link",
+	"builder_link_label": "Label",
+	"builder_link_url": "URL"
 }

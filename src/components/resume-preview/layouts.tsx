@@ -1,11 +1,12 @@
 import {
 	Bullets,
-	contactList,
+	contactWithLinks,
 	EducationList,
 	EntryHead,
 	ExperienceList,
 	fmtRange,
 	type LayoutProps,
+	ProjectsList,
 	SectionTitle,
 	SkillChips,
 	SkillsInline,
@@ -59,7 +60,7 @@ export function Modern({ data, presentLabel }: LayoutProps) {
 					<Stack>
 						<Sec title="Contact" variant="accent">
 							<div className="space-y-1 text-[10px] break-words opacity-80">
-								{contactList(basics).map((c) => (
+								{contactWithLinks(data).map((c) => (
 									<p key={c}>{c}</p>
 								))}
 							</div>
@@ -82,6 +83,11 @@ export function Modern({ data, presentLabel }: LayoutProps) {
 					<Sec title="Experience" variant="accent">
 						<ExperienceList data={data} presentLabel={presentLabel} />
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects" variant="accent">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<Sec title="Education" variant="accent">
 						<EducationList data={data} presentLabel={presentLabel} />
 					</Sec>
@@ -99,7 +105,7 @@ export function Classic({ data, presentLabel }: LayoutProps) {
 			<div className="text-center">
 				<h1 className="text-2xl font-bold">{data.basics.fullName || " "}</h1>
 				<p className="mt-1 text-[11px] opacity-70">
-					{contactList(data.basics).join(" · ")}
+					{contactWithLinks(data).join(" · ")}
 				</p>
 			</div>
 			<div className="mt-6">
@@ -108,6 +114,11 @@ export function Classic({ data, presentLabel }: LayoutProps) {
 					<Sec title="Experience" variant="ruled">
 						<ExperienceList data={data} presentLabel={presentLabel} />
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects" variant="ruled">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<Sec title="Education" variant="ruled">
 						<EducationList data={data} presentLabel={presentLabel} />
 					</Sec>
@@ -129,7 +140,7 @@ export function Minimal({ data, presentLabel }: LayoutProps) {
 				{data.basics.fullName || " "}
 			</h1>
 			<p className="mt-1 text-[11px] opacity-60">
-				{contactList(data.basics).join("  ·  ")}
+				{contactWithLinks(data).join("  ·  ")}
 			</p>
 			<div className="mt-6">
 				<Stack>
@@ -137,6 +148,11 @@ export function Minimal({ data, presentLabel }: LayoutProps) {
 					<Sec title="Experience">
 						<ExperienceList data={data} presentLabel={presentLabel} />
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<Sec title="Education">
 						<EducationList data={data} presentLabel={presentLabel} />
 					</Sec>
@@ -163,7 +179,7 @@ export function Sidebar({ data, presentLabel }: LayoutProps) {
 					{basics.fullName || " "}
 				</h1>
 				<div className="mt-6 space-y-1 text-[10px] break-words opacity-90">
-					{contactList(basics).map((c) => (
+					{contactWithLinks(data).map((c) => (
 						<p key={c}>{c}</p>
 					))}
 				</div>
@@ -190,6 +206,11 @@ export function Sidebar({ data, presentLabel }: LayoutProps) {
 					<Sec title="Experience">
 						<ExperienceList data={data} presentLabel={presentLabel} />
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<Sec title="Education">
 						<EducationList data={data} presentLabel={presentLabel} />
 					</Sec>
@@ -207,7 +228,7 @@ export function Timeline({ data, presentLabel }: LayoutProps) {
 		<div className="px-10 py-9">
 			<h1 className="text-2xl font-bold">{basics.fullName || " "}</h1>
 			<p className="mt-1 text-[11px] opacity-65">
-				{contactList(basics).join(" · ")}
+				{contactWithLinks(data).join(" · ")}
 			</p>
 			<div className="mt-6">
 				<Stack>
@@ -238,6 +259,11 @@ export function Timeline({ data, presentLabel }: LayoutProps) {
 							))}
 						</div>
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects" variant="accent">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<Sec title="Education" variant="accent">
 						<EducationList data={data} presentLabel={presentLabel} />
 					</Sec>
@@ -264,7 +290,7 @@ export function Swiss({ data, presentLabel }: LayoutProps) {
 					{basics.fullName || " "}
 				</h1>
 				<p className="mt-2 text-[10px] font-medium tracking-wide uppercase opacity-70">
-					{contactList(basics).join("  /  ")}
+					{contactWithLinks(data).join("  /  ")}
 				</p>
 			</div>
 			<div className="mt-5">
@@ -273,6 +299,11 @@ export function Swiss({ data, presentLabel }: LayoutProps) {
 					<Sec title="Experience" variant="block">
 						<ExperienceList data={data} presentLabel={presentLabel} />
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects" variant="block">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<div className="grid grid-cols-2 gap-5">
 						<Sec title="Education" variant="block">
 							<EducationList data={data} presentLabel={presentLabel} />
@@ -301,7 +332,7 @@ export function Elegant({ data, presentLabel }: LayoutProps) {
 				style={{ background: "var(--t-accent)" }}
 			/>
 			<p className="mt-3 text-[10px] tracking-wide opacity-65">
-				{contactList(basics).join("   ·   ")}
+				{contactWithLinks(data).join("   ·   ")}
 			</p>
 			<div className="mt-8 text-left">
 				<Stack>
@@ -309,6 +340,11 @@ export function Elegant({ data, presentLabel }: LayoutProps) {
 					<Sec title="Experience" variant="ruled">
 						<ExperienceList data={data} presentLabel={presentLabel} />
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects" variant="ruled">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<Sec title="Education" variant="ruled">
 						<EducationList data={data} presentLabel={presentLabel} />
 					</Sec>
@@ -346,13 +382,18 @@ export function Editorial({ data, presentLabel }: LayoutProps) {
 					background: "color-mix(in oklab, var(--t-accent) 12%, white)",
 				}}
 			>
-				{contactList(basics).join("  ·  ")}
+				{contactWithLinks(data).join("  ·  ")}
 			</div>
 			<div className="px-10 py-7">
 				<Stack>
 					<Sec title="Experience" variant="accent">
 						<ExperienceList data={data} presentLabel={presentLabel} />
 					</Sec>
+					{data.projects.length > 0 && (
+						<Sec title="Projects" variant="accent">
+							<ProjectsList data={data} />
+						</Sec>
+					)}
 					<div className="grid grid-cols-[1fr_38%] gap-6">
 						<Sec title="Education" variant="accent">
 							<EducationList data={data} presentLabel={presentLabel} />

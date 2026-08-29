@@ -6,6 +6,8 @@ import {
 	BasicsSection,
 	EducationSection,
 	ExperienceSection,
+	LinksSection,
+	ProjectsSection,
 	SkillsSection,
 } from "#/components/builder/editor";
 import { ResumeSheet } from "#/components/resume-preview/templates";
@@ -150,6 +152,8 @@ function Builder() {
 					<BasicsSection />
 					<ExperienceSection />
 					<EducationSection />
+					<ProjectsSection />
+					<LinksSection />
 					<SkillsSection />
 				</div>
 				{/* Live A4 preview */}

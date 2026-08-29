@@ -63,6 +63,8 @@ export const useBuilderStore = create<BuilderState>((set) => ({
 		},
 		experience: [],
 		education: [],
+		projects: [],
+		links: [],
 		skills: [],
 	},
 	status: "idle",

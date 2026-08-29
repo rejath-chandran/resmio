@@ -49,6 +49,19 @@ export const SAMPLE_RESUME: ResumeData = {
 			end: "2018",
 		},
 	],
+	projects: [
+		{
+			id: "p1",
+			name: "Edge Renderer",
+			url: "github.com/alex/edge-renderer",
+			description:
+				"Open-source SSR toolkit adopted by 300+ repos; ships HTML from the nearest edge node.",
+		},
+	],
+	links: [
+		{ id: "l1", label: "GitHub", url: "github.com/alex" },
+		{ id: "l2", label: "LinkedIn", url: "linkedin.com/in/alex" },
+	],
 	skills: [
 		"TypeScript",
 		"React",

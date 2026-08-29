@@ -29,6 +29,17 @@ export type ResumeData = {
 		start: string;
 		end: string;
 	}>;
+	projects: Array<{
+		id: string;
+		name: string;
+		url: string;
+		description: string;
+	}>;
+	links: Array<{
+		id: string;
+		label: string;
+		url: string;
+	}>;
 	skills: string[];
 };
 
@@ -43,6 +54,8 @@ export const emptyResume = (): ResumeData => ({
 	},
 	experience: [],
 	education: [],
+	projects: [],
+	links: [],
 	skills: [],
 });
 
@@ -84,6 +97,31 @@ function parseEducation(v: unknown): ResumeData["education"] {
 	});
 }
 
+function parseProjects(v: unknown): ResumeData["projects"] {
+	if (!Array.isArray(v)) return [];
+	return v.slice(0, 20).map((e) => {
+		const o = (e ?? {}) as Record<string, unknown>;
+		return {
+			id: str(o.id, 40) || crypto.randomUUID(),
+			name: str(o.name, 120),
+			url: str(o.url, 200),
+			description: str(o.description, 600),
+		};
+	});
+}
+
+function parseLinks(v: unknown): ResumeData["links"] {
+	if (!Array.isArray(v)) return [];
+	return v.slice(0, 15).map((e) => {
+		const o = (e ?? {}) as Record<string, unknown>;
+		return {
+			id: str(o.id, 40) || crypto.randomUUID(),
+			label: str(o.label, 60),
+			url: str(o.url, 200),
+		};
+	});
+}
+
 export function parseResumeData(v: unknown): ResumeData {
 	const o = (v ?? {}) as Record<string, unknown>;
 	const b = (o.basics ?? {}) as Record<string, unknown>;
@@ -98,6 +136,8 @@ export function parseResumeData(v: unknown): ResumeData {
 		},
 		experience: parseExperience(o.experience),
 		education: parseEducation(o.education),
+		projects: parseProjects(o.projects),
+		links: parseLinks(o.links),
 		skills: Array.isArray(o.skills)
 			? o.skills
 					.slice(0, 30)

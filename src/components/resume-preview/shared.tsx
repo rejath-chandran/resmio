@@ -23,6 +23,12 @@ export const fmtRange = (
 export const contactList = (basics: ResumeData["basics"]) =>
 	[basics.email, basics.phone, basics.location, basics.website].filter(Boolean);
 
+/** Contact line plus any links (shows the URL, falling back to the label). */
+export const contactWithLinks = (data: ResumeData) => [
+	...contactList(data.basics),
+	...data.links.map((l) => l.url || l.label).filter(Boolean),
+];
+
 /** Vertical rhythm driven by the theme's density. */
 export function Stack({ children }: { children: React.ReactNode }) {
 	return (
@@ -153,6 +159,23 @@ export function EducationList({
 					subtitle={e.school}
 					meta={fmtRange(e.start, e.end, false, presentLabel)}
 				/>
+			))}
+		</div>
+	);
+}
+
+export function ProjectsList({ data }: { data: ResumeData }) {
+	return (
+		<div className="space-y-3">
+			{data.projects.map((p) => (
+				<div key={p.id}>
+					<EntryHead title={p.name} meta={p.url} />
+					{p.description && (
+						<p className="mt-0.5 text-[11px] leading-snug opacity-85">
+							{p.description}
+						</p>
+					)}
+				</div>
 			))}
 		</div>
 	);
