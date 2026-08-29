@@ -145,6 +145,7 @@
 	"builder_exporting": "Wird exportiert…",
 	"builder_export_failed": "Export fehlgeschlagen — bitte erneut versuchen.",
 	"builder_present": "Heute",
+	"builder_preview": "Vorschau",
 	"builder_projects": "Projekte",
 	"builder_add_project": "Projekt hinzufügen",
 	"builder_project_name": "Projektname",

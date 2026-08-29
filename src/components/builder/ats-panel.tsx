@@ -28,7 +28,13 @@ function Gauge({ score }: { score: number }) {
 	);
 }
 
-export function AtsPanel({ pro }: { pro: boolean }) {
+export function AtsPanel({
+	pro,
+	onClose,
+}: {
+	pro: boolean;
+	onClose?: () => void;
+}) {
 	const data = useBuilderStore((s) => s.data);
 	const [jd, setJd] = useState("");
 	const [aiTips, setAiTips] = useState<string[]>([]);
@@ -84,14 +90,24 @@ export function AtsPanel({ pro }: { pro: boolean }) {
 
 	return (
 		<section className="card space-y-5 p-6">
-			<div className="flex items-center gap-4">
+			<div className="flex items-start gap-4">
 				<Gauge score={report.score} />
-				<div>
+				<div className="flex-1">
 					<h2 className="font-display text-lg font-semibold text-white">
 						{m.ats_title()}
 					</h2>
 					<p className="mt-1 text-sm text-neutral-400">{m.ats_subtitle()}</p>
 				</div>
+				{onClose && (
+					<button
+						type="button"
+						onClick={onClose}
+						aria-label="Close"
+						className="btn-ghost -mr-2 -mt-1 shrink-0 px-2 text-lg leading-none"
+					>
+						✕
+					</button>
+				)}
 			</div>
 
 			{/* Category breakdown */}

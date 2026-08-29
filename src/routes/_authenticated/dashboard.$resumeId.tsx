@@ -70,6 +70,7 @@ function Builder() {
 	const [exporting, setExporting] = useState(false);
 	const [exportError, setExportError] = useState(false);
 	const [showAts, setShowAts] = useState(false);
+	const [showPreview, setShowPreview] = useState(false);
 	const atsScore = computeAtsReport(data).score;
 	const atsColor = { low: "#ef4444", mid: "#f59e0b", high: "#22c55e" }[
 		atsBand(atsScore)
@@ -86,7 +87,7 @@ function Builder() {
 					← {m.builder_back()}
 				</Link>
 				<input
-					className="input w-56 flex-1 max-w-xs"
+					className="input w-56 min-w-0 max-w-xs flex-1"
 					value={title}
 					onChange={(e) => setTitle(e.target.value)}
 					aria-label="Resume title"
@@ -126,6 +127,13 @@ function Builder() {
 							? m.builder_saved()
 							: ""}
 				</span>
+				<button
+					type="button"
+					onClick={() => setShowPreview(true)}
+					className="btn-ghost lg:hidden!"
+				>
+					👁 {m.builder_preview()}
+				</button>
 				{pro ? (
 					<button
 						type="button"
@@ -175,7 +183,7 @@ function Builder() {
 				)}
 			</div>
 
-			<div className="flex flex-1 flex-col items-start justify-center gap-8 p-6 lg:flex-row">
+			<div className="flex flex-1 flex-col items-start justify-center gap-8 p-4 sm:p-6 lg:flex-row">
 				{/* Editor */}
 				<div className="w-full max-w-xl space-y-5">
 					<BasicsSection />
@@ -185,24 +193,67 @@ function Builder() {
 					<LinksSection />
 					<SkillsSection />
 				</div>
-				{/* Live A4 preview — floats alongside the editor while scrolling (lg+). */}
-				<div className="resume-sheet-print-root origin-top scale-[0.85] self-start xl:scale-100 lg:sticky lg:top-[57px]">
-					<div className="resume-sheet" id="resume-sheet">
-						<ResumeSheet
-							data={data}
-							layout={active?.layout ?? template}
-							theme={active?.theme ?? DEFAULT_THEME}
-							presentLabel={m.builder_present()}
-						/>
+				{/* Live A4 preview — floats alongside the editor while scrolling (lg+).
+				    Hidden below lg; small screens use the toggled overlay below. */}
+				<div className="hidden self-start lg:sticky lg:top-[57px] lg:block">
+					<div className="resume-sheet-zoom origin-top">
+						<div className="resume-sheet" id="resume-sheet">
+							<ResumeSheet
+								data={data}
+								layout={active?.layout ?? template}
+								theme={active?.theme ?? DEFAULT_THEME}
+								presentLabel={m.builder_present()}
+							/>
+						</div>
 					</div>
 				</div>
-				{/* ATS report — Pro; floats beside the preview while scrolling (lg+). */}
-				{showAts && pro && (
-					<div className="w-full max-w-sm self-start lg:sticky lg:top-[57px]">
-						<AtsPanel pro={pro} />
-					</div>
-				)}
 			</div>
+
+			{/* Mobile/tablet preview overlay (below lg). */}
+			{showPreview && (
+				<div className="fixed inset-0 z-30 flex flex-col bg-neutral-950/95 lg:hidden">
+					<div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
+						<span className="font-display font-semibold text-white">
+							{m.builder_preview()}
+						</span>
+						<button
+							type="button"
+							onClick={() => setShowPreview(false)}
+							aria-label="Close"
+							className="btn-ghost px-3 text-lg leading-none"
+						>
+							✕
+						</button>
+					</div>
+					<div className="flex-1 overflow-auto p-4">
+						<div className="resume-sheet-zoom-overlay mx-auto origin-top">
+							<div className="resume-sheet">
+								<ResumeSheet
+									data={data}
+									layout={active?.layout ?? template}
+									theme={active?.theme ?? DEFAULT_THEME}
+									presentLabel={m.builder_present()}
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* ATS report — Pro; slide-in right drawer on all screen sizes. */}
+			{showAts && pro && (
+				<>
+					<button
+						type="button"
+						aria-label="Close ATS panel"
+						onClick={() => setShowAts(false)}
+						className="fixed inset-0 z-10 bg-black/40 lg:hidden"
+					/>
+					<div className="fixed right-0 top-[57px] bottom-0 z-20 w-full max-w-sm overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-4">
+						<AtsPanel pro={pro} onClose={() => setShowAts(false)} />
+					</div>
+				</>
+			)}
 		</main>
 	);
 }

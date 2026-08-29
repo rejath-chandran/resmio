@@ -263,3 +263,33 @@ template lock) — the **AI endpoint is server-enforced**.
 Verify: `npx tsx ./ats.check.mjs` → `PASS ats.check — empty=13 full=95`; `npx tsc --noEmit`,
 `npx biome check src`, `npm run build` green; `node ./e2e-smoke.mjs` **18/18** against a dev
 server started with `OPENAI_API_KEY=""`.
+
+### 2026-08-30 — Responsive builder (phone / tablet / desktop)
+
+Made `/dashboard/$resumeId` responsive. Root cause of the old breakage: the A4 sheet is
+`width: 210mm` (~794px) and `transform: scale` only shrank it *visually* while still
+reserving 794px → horizontal scroll; and editor + preview + ATS made three inline columns
+that overflowed laptops.
+
+- **Preview scaling via `zoom`** (`src/styles.css`): new `.resume-sheet-zoom` (inline desktop:
+  `.62`→`.78`@1280→`1`@1536) and `.resume-sheet-zoom-overlay` (mobile: `.45`→`.7`@640→`.9`@768).
+  `zoom` shrinks the *layout footprint* (unlike `transform: scale`), which is what removes the
+  overflow. `ponytail:` needs evergreen browser (Firefox ≥126); legacy path noted in CSS.
+- **Route** (`dashboard.$resumeId.tsx`): inline preview is now `hidden lg:block` + `.resume-sheet-zoom`
+  (keeps its `id="resume-sheet"` for PDF export). Below `lg`, a **Preview** toolbar button
+  (`lg:hidden!` — the `!` beats `.btn-ghost{display:inline-flex}`) opens a full-screen overlay
+  copy (id-less). Body padding `p-4 sm:p-6`; title input `min-w-0` so the toolbar never overflows.
+- **ATS panel → drawer**: no longer a third inline column; renders as a fixed right drawer
+  (`fixed right-0 top-[57px] bottom-0 max-w-sm`) with a `lg:hidden` backdrop. `AtsPanel` gained an
+  optional `onClose` + ✕ button (`src/components/builder/ats-panel.tsx`).
+- **Editor cards**: `card p-6` → `card p-4 sm:p-6`; grids were already `sm:grid-cols-2`.
+- **i18n**: added `builder_preview` (en/de), recompiled paraglide.
+
+Gotcha: custom component classes that set `display` (`.btn-ghost`) override Tailwind's
+`lg:hidden` at equal specificity — use the `!` important variant to hide them at a breakpoint.
+
+Verify: new `responsive.check.mjs` (Playwright) → **9/9** — no horizontal overflow at
+375/768/1280/1536, Preview button shows <lg and opens the overlay, inline preview shows on
+desktop with the button hidden. `npx tsc --noEmit`, `npx biome check src`, `npm run build`
+green; `node ./e2e-smoke.mjs` **18/18** (blank `OPENAI_API_KEY`; one cold-start flake that
+passes on warm rerun).

@@ -145,6 +145,7 @@
 	"builder_exporting": "Exporting…",
 	"builder_export_failed": "Export failed — please try again.",
 	"builder_present": "Present",
+	"builder_preview": "Preview",
 	"builder_projects": "Projects",
 	"builder_add_project": "Add project",
 	"builder_project_name": "Project name",

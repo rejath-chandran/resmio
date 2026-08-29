@@ -154,6 +154,41 @@ body {
   box-shadow: 0 25px 60px -15px rgb(0 0 0 / 0.5);
 }
 
+/* Preview scaling uses `zoom` (not transform: scale) on purpose: zoom shrinks the
+   layout footprint too, so the fixed 210mm sheet stops reserving ~794px and the
+   editor/preview columns fit without horizontal scroll.
+   ponytail: needs an evergreen browser (Firefox ≥126). For legacy support, swap to
+   transform: scale + a wrapper sized to the scaled box. */
+.resume-sheet-zoom {
+  zoom: 0.62;
+}
+@media (min-width: 1280px) {
+  .resume-sheet-zoom {
+    zoom: 0.78;
+  }
+}
+@media (min-width: 1536px) {
+  .resume-sheet-zoom {
+    zoom: 1;
+  }
+}
+
+/* Mobile full-screen preview overlay: fit-to-width per breakpoint; the container
+   scrolls/pans if the sheet still overflows. */
+.resume-sheet-zoom-overlay {
+  zoom: 0.45;
+}
+@media (min-width: 640px) {
+  .resume-sheet-zoom-overlay {
+    zoom: 0.7;
+  }
+}
+@media (min-width: 768px) {
+  .resume-sheet-zoom-overlay {
+    zoom: 0.9;
+  }
+}
+
 /* ---------- Print / PDF export ----------
    The PDF renderer (src/routes/api/pdf.ts) sends a document containing only
    the sheet, so these rules just normalize page geometry. Do NOT reintroduce a
