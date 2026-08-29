@@ -152,5 +152,17 @@
 	"builder_links": "Links",
 	"builder_add_link": "Add link",
 	"builder_link_label": "Label",
-	"builder_link_url": "URL"
+	"builder_link_url": "URL",
+	"ats_title": "ATS score",
+	"ats_subtitle": "Live estimate of how well your resume passes ATS screening.",
+	"ats_chip": "ATS",
+	"ats_suggestions": "Suggestions",
+	"ats_jd_label": "Target job description (optional)",
+	"ats_jd_placeholder": "Paste the job description to score keyword match…",
+	"ats_missing_keywords": "Missing keywords:",
+	"ats_ai_button": "AI suggestions",
+	"ats_ai_working": "Reviewing…",
+	"ats_ai_unavailable": "AI review is unavailable right now — showing heuristic tips.",
+	"ats_locked_blurb": "Unlock the ATS checker with Pro to score your resume and get suggestions.",
+	"ats_unlock": "Upgrade to Pro"
 }

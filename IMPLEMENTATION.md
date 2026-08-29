@@ -222,3 +222,44 @@ Verify: `npx tsc --noEmit`, `npx biome check src`, `npm run build` all green.
 `OPENAI_API_KEY` (the "ai fallback rewrite" check asserts the local `worked on`→
 `developed` rewrite; with a real key set in `.env.local` the model returns a different
 rewrite and that one check reads 17/18 — an env condition, not a regression).
+
+### 2026-08-30 — Sticky (floating) preview in the builder
+
+The preview column now stays pinned while the editor scrolls on `lg+`
+(`dashboard.$resumeId.tsx`): `lg:sticky lg:top-[57px] self-start` on the
+`resume-sheet-print-root` wrapper, and — the part that actually mattered —
+**`overflow-auto` was removed from the body row**. An `overflow-*` ancestor becomes the
+sticky scroll port, so the sheet was sticking to a container that never scrolled while
+the window did. Verified with Playwright: the sheet's `top` stays at 57px after a 1200px
+window scroll.
+
+### 2026-08-30 — ATS checker (Pro)
+
+Live 0–100 ATS score beside the preview, with suggestions and optional job-description
+keyword matching. Heuristic runs client-side (instant, every keystroke); the AI review is
+a Pro-gated server fn.
+
+- **Scorer** (`src/lib/ats.ts`, pure/client-safe — no `db` imports): `computeAtsReport(data, jobDescription?)`
+  → `{ score, categories, suggestions, missingKeywords }`. Rubric sums to 100 — contact 15,
+  summary 10, experience 15, bullets 20 (quantified `/\d|%/` + action-verb opener), skills 10,
+  education 5, links 5, formatting 10, keyword match 10 (full credit when no JD, so the base
+  score stays meaningful). Each sub-max category emits one concrete suggestion. Also exports
+  `atsBand(score)` (<50 low / <80 mid / else high) and `resumeToText(data)`, reused by the AI call.
+- **AI review** (`src/lib/ats-functions.ts`): `atsReview` server fn only (client-bundle rule —
+  see `src/lib/roles.ts`); `isProUser` is dynamically imported inside the handler and throws a
+  friendly upgrade error for free users. OpenAI over `fetch` (same env as `ai-functions.ts`),
+  asks for a JSON array of 3–6 suggestions, `parseSuggestions` tolerates non-JSON. No key /
+  non-OK / throw → `{ suggestions: [], source: "fallback" }`, so the heuristic tips still show.
+- **UI** (`src/components/builder/ats-panel.tsx`): conic-gradient gauge, per-category bars,
+  suggestions, JD textarea (local state → scorer), missing-keyword list, "✦ AI suggestions"
+  button via `useServerFn`. Non-pro renders a blurred body + billing CTA.
+- **Toolbar** (`dashboard.$resumeId.tsx`): live colored score chip toggles the panel as a third
+  sticky column; free users get `🔒 ATS` linking to `/dashboard/billing`.
+- **i18n**: `ats_*` keys in `messages/en.json` + `de.json`, paraglide recompiled.
+
+Note: the client heuristic can't be hidden from a determined user (same model as the
+template lock) — the **AI endpoint is server-enforced**.
+
+Verify: `npx tsx ./ats.check.mjs` → `PASS ats.check — empty=13 full=95`; `npx tsc --noEmit`,
+`npx biome check src`, `npm run build` green; `node ./e2e-smoke.mjs` **18/18** against a dev
+server started with `OPENAI_API_KEY=""`.

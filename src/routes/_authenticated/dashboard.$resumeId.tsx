@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-
+import { AtsPanel } from "#/components/builder/ats-panel";
 import {
 	BasicsSection,
 	EducationSection,
@@ -11,6 +11,7 @@ import {
 	SkillsSection,
 } from "#/components/builder/editor";
 import { ResumeSheet } from "#/components/resume-preview/templates";
+import { atsBand, computeAtsReport } from "#/lib/ats";
 import { getBillingState } from "#/lib/billing-functions";
 import { setPersister, useBuilderStore } from "#/lib/builder-store";
 import { exportResumeToPdf } from "#/lib/pdf-export";
@@ -68,6 +69,11 @@ function Builder() {
 	const setTemplate = useBuilderStore((s) => s.setTemplate);
 	const [exporting, setExporting] = useState(false);
 	const [exportError, setExportError] = useState(false);
+	const [showAts, setShowAts] = useState(false);
+	const atsScore = computeAtsReport(data).score;
+	const atsColor = { low: "#ef4444", mid: "#f59e0b", high: "#22c55e" }[
+		atsBand(atsScore)
+	];
 	const active = templateList?.find((t) => t.id === template);
 
 	if (!resume) return <div className="p-10 text-neutral-400">…</div>;
@@ -120,6 +126,29 @@ function Builder() {
 							? m.builder_saved()
 							: ""}
 				</span>
+				{pro ? (
+					<button
+						type="button"
+						onClick={() => setShowAts((v) => !v)}
+						aria-pressed={showAts}
+						className="btn-ghost flex items-center gap-1.5"
+						title={m.ats_title()}
+					>
+						<span
+							className="inline-block h-2 w-2 rounded-full"
+							style={{ background: atsColor }}
+						/>
+						{m.ats_chip()} {atsScore}
+					</button>
+				) : (
+					<Link
+						to="/dashboard/billing"
+						className="btn-ghost"
+						title={m.ats_title()}
+					>
+						🔒 {m.ats_chip()}
+					</Link>
+				)}
 				<button
 					type="button"
 					disabled={exporting}
@@ -146,7 +175,7 @@ function Builder() {
 				)}
 			</div>
 
-			<div className="flex flex-1 items-start justify-center gap-8 overflow-auto p-6 lg:flex-row flex-col">
+			<div className="flex flex-1 flex-col items-start justify-center gap-8 p-6 lg:flex-row">
 				{/* Editor */}
 				<div className="w-full max-w-xl space-y-5">
 					<BasicsSection />
@@ -156,8 +185,8 @@ function Builder() {
 					<LinksSection />
 					<SkillsSection />
 				</div>
-				{/* Live A4 preview */}
-				<div className="resume-sheet-print-root sticky top-20 origin-top scale-[0.85] xl:scale-100">
+				{/* Live A4 preview — floats alongside the editor while scrolling (lg+). */}
+				<div className="resume-sheet-print-root origin-top scale-[0.85] self-start xl:scale-100 lg:sticky lg:top-[57px]">
 					<div className="resume-sheet" id="resume-sheet">
 						<ResumeSheet
 							data={data}
@@ -167,6 +196,12 @@ function Builder() {
 						/>
 					</div>
 				</div>
+				{/* ATS report — Pro; floats beside the preview while scrolling (lg+). */}
+				{showAts && pro && (
+					<div className="w-full max-w-sm self-start lg:sticky lg:top-[57px]">
+						<AtsPanel pro={pro} />
+					</div>
+				)}
 			</div>
 		</main>
 	);

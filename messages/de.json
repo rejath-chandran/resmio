@@ -152,5 +152,17 @@
 	"builder_links": "Links",
 	"builder_add_link": "Link hinzufügen",
 	"builder_link_label": "Bezeichnung",
-	"builder_link_url": "URL"
+	"builder_link_url": "URL",
+	"ats_title": "ATS-Score",
+	"ats_subtitle": "Live-Einschätzung, wie gut dein Lebenslauf das ATS-Screening besteht.",
+	"ats_chip": "ATS",
+	"ats_suggestions": "Vorschläge",
+	"ats_jd_label": "Ziel-Stellenbeschreibung (optional)",
+	"ats_jd_placeholder": "Stellenbeschreibung einfügen, um die Keyword-Übereinstimmung zu bewerten…",
+	"ats_missing_keywords": "Fehlende Keywords:",
+	"ats_ai_button": "KI-Vorschläge",
+	"ats_ai_working": "Wird geprüft…",
+	"ats_ai_unavailable": "KI-Prüfung derzeit nicht verfügbar — es werden heuristische Tipps angezeigt.",
+	"ats_locked_blurb": "Schalte den ATS-Checker mit Pro frei, um deinen Lebenslauf zu bewerten und Vorschläge zu erhalten.",
+	"ats_unlock": "Auf Pro upgraden"
 }
