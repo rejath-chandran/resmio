@@ -19,7 +19,10 @@ import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
 import { Route as AuthenticatedDashboardResumeIdRouteImport } from './routes/_authenticated/dashboard.$resumeId'
+import { Route as AuthenticatedDashboardBillingRouteImport } from './routes/_authenticated/dashboard.billing'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiCashfreeWebhookRouteImport } from './routes/api/cashfree.webhook'
+import { Route as AdminAdminPlansIndexRouteImport } from './routes/_admin/admin.plans.index'
 import { Route as AdminAdminTemplatesIndexRouteImport } from './routes/_admin/admin.templates.index'
 import { Route as AdminAdminTemplatesTemplateIdRouteImport } from './routes/_admin/admin.templates.$templateId'
 
@@ -73,10 +76,26 @@ const AuthenticatedDashboardResumeIdRoute =
     path: '/dashboard/$resumeId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedDashboardBillingRoute =
+  AuthenticatedDashboardBillingRouteImport.update({
+    id: '/dashboard/billing',
+    path: '/dashboard/billing',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCashfreeWebhookRoute = ApiCashfreeWebhookRouteImport.update({
+  id: '/api/cashfree/webhook',
+  path: '/api/cashfree/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAdminPlansIndexRoute = AdminAdminPlansIndexRouteImport.update({
+  id: '/admin/plans/',
+  path: '/admin/plans/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminTemplatesIndexRoute =
   AdminAdminTemplatesIndexRouteImport.update({
@@ -98,10 +117,13 @@ export interface FileRoutesByFullPath {
   '/api/pdf': typeof ApiPdfRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
+  '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cashfree/webhook': typeof ApiCashfreeWebhookRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/admin/templates/$templateId': typeof AdminAdminTemplatesTemplateIdRoute
+  '/admin/plans/': typeof AdminAdminPlansIndexRoute
   '/admin/templates/': typeof AdminAdminTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -111,10 +133,13 @@ export interface FileRoutesByTo {
   '/api/pdf': typeof ApiPdfRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
+  '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cashfree/webhook': typeof ApiCashfreeWebhookRoute
   '/admin': typeof AdminAdminIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/admin/templates/$templateId': typeof AdminAdminTemplatesTemplateIdRoute
+  '/admin/plans': typeof AdminAdminPlansIndexRoute
   '/admin/templates': typeof AdminAdminTemplatesIndexRoute
 }
 export interface FileRoutesById {
@@ -127,10 +152,13 @@ export interface FileRoutesById {
   '/api/pdf': typeof ApiPdfRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
+  '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cashfree/webhook': typeof ApiCashfreeWebhookRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_admin/admin/templates/$templateId': typeof AdminAdminTemplatesTemplateIdRoute
+  '/_admin/admin/plans/': typeof AdminAdminPlansIndexRoute
   '/_admin/admin/templates/': typeof AdminAdminTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -142,10 +170,13 @@ export interface FileRouteTypes {
     | '/api/pdf'
     | '/admin/users'
     | '/dashboard/$resumeId'
+    | '/dashboard/billing'
     | '/api/auth/$'
+    | '/api/cashfree/webhook'
     | '/admin/'
     | '/dashboard/'
     | '/admin/templates/$templateId'
+    | '/admin/plans/'
     | '/admin/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,10 +186,13 @@ export interface FileRouteTypes {
     | '/api/pdf'
     | '/admin/users'
     | '/dashboard/$resumeId'
+    | '/dashboard/billing'
     | '/api/auth/$'
+    | '/api/cashfree/webhook'
     | '/admin'
     | '/dashboard'
     | '/admin/templates/$templateId'
+    | '/admin/plans'
     | '/admin/templates'
   id:
     | '__root__'
@@ -170,10 +204,13 @@ export interface FileRouteTypes {
     | '/api/pdf'
     | '/_admin/admin/users'
     | '/_authenticated/dashboard/$resumeId'
+    | '/_authenticated/dashboard/billing'
     | '/api/auth/$'
+    | '/api/cashfree/webhook'
     | '/_admin/admin/'
     | '/_authenticated/dashboard/'
     | '/_admin/admin/templates/$templateId'
+    | '/_admin/admin/plans/'
     | '/_admin/admin/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -185,6 +222,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   ApiPdfRoute: typeof ApiPdfRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCashfreeWebhookRoute: typeof ApiCashfreeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -259,12 +297,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardResumeIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/dashboard/billing': {
+      id: '/_authenticated/dashboard/billing'
+      path: '/dashboard/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof AuthenticatedDashboardBillingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/cashfree/webhook': {
+      id: '/api/cashfree/webhook'
+      path: '/api/cashfree/webhook'
+      fullPath: '/api/cashfree/webhook'
+      preLoaderRoute: typeof ApiCashfreeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin/admin/plans/': {
+      id: '/_admin/admin/plans/'
+      path: '/admin/plans'
+      fullPath: '/admin/plans/'
+      preLoaderRoute: typeof AdminAdminPlansIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_admin/admin/templates/': {
       id: '/_admin/admin/templates/'
@@ -287,6 +346,7 @@ interface AdminRouteChildren {
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminTemplatesTemplateIdRoute: typeof AdminAdminTemplatesTemplateIdRoute
+  AdminAdminPlansIndexRoute: typeof AdminAdminPlansIndexRoute
   AdminAdminTemplatesIndexRoute: typeof AdminAdminTemplatesIndexRoute
 }
 
@@ -294,6 +354,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminUsersRoute: AdminAdminUsersRoute,
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminTemplatesTemplateIdRoute: AdminAdminTemplatesTemplateIdRoute,
+  AdminAdminPlansIndexRoute: AdminAdminPlansIndexRoute,
   AdminAdminTemplatesIndexRoute: AdminAdminTemplatesIndexRoute,
 }
 
@@ -301,11 +362,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardResumeIdRoute: typeof AuthenticatedDashboardResumeIdRoute
+  AuthenticatedDashboardBillingRoute: typeof AuthenticatedDashboardBillingRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardResumeIdRoute: AuthenticatedDashboardResumeIdRoute,
+  AuthenticatedDashboardBillingRoute: AuthenticatedDashboardBillingRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
 }
 
@@ -321,6 +384,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   ApiPdfRoute: ApiPdfRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCashfreeWebhookRoute: ApiCashfreeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

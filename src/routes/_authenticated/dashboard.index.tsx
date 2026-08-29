@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ResumeMeta, TemplateOption } from "#/lib/resume-functions";
 import {
 	createResume,
@@ -56,6 +56,20 @@ function Dashboard() {
 					+ {m.dash_new_resume()}
 				</button>
 			</div>
+
+			{create.error && (
+				<p
+					className="mt-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-300"
+					role="alert"
+				>
+					{create.error instanceof Error
+						? create.error.message
+						: String(create.error)}{" "}
+					<Link to="/dashboard/billing" className="font-semibold underline">
+						Upgrade to Pro
+					</Link>
+				</p>
+			)}
 
 			{isPending ? null : resumes.length === 0 ? (
 				<div className="card mt-12 flex flex-col items-center px-8 py-20 text-center">

@@ -38,6 +38,18 @@ function AdminOverview() {
 					hint="active / total"
 					pending={isPending}
 				/>
+				<Stat
+					label="Pro subscribers"
+					value={data?.activeSubscriptions}
+					hint="active now"
+					pending={isPending}
+				/>
+				<Stat
+					label="Revenue"
+					value={data && `₹${data.revenueInr.toLocaleString("en-IN")}`}
+					hint="paid orders, all time"
+					pending={isPending}
+				/>
 			</div>
 
 			<section className="card mt-8 p-5">

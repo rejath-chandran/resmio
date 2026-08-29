@@ -1,9 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
-import { asc, count, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, like, or, sql, sum } from "drizzle-orm";
 
 import { isLayoutId } from "#/components/resume-preview/layouts";
 import { db } from "#/db";
-import { resumes, templates, user as userTable } from "#/db/schema";
+import {
+	payments,
+	plans,
+	resumes,
+	subscriptions,
+	templates,
+	user as userTable,
+} from "#/db/schema";
 import { adminMiddleware } from "#/lib/auth-middleware";
 import { isSlug, parseTheme } from "#/lib/templates";
 
@@ -37,19 +44,34 @@ export const adminStats = createServerFn({ method: "GET" })
 
 		// Signups in the last 7 days, and the most-used templates.
 		const weekAgo = new Date(Date.now() - 7 * 86_400_000);
-		const [[newUsers], byTemplate] = await Promise.all([
-			db
-				.select({ n: count() })
-				.from(userTable)
-				.where(
-					sql`${userTable.createdAt} >= ${Math.floor(weekAgo.getTime() / 1000)}`,
-				),
-			db
-				.select({ template: resumes.template, n: count() })
-				.from(resumes)
-				.groupBy(resumes.template)
-				.orderBy(desc(count())),
-		]);
+		const [[newUsers], byTemplate, [activeSubs], [revenue]] = await Promise.all(
+			[
+				db
+					.select({ n: count() })
+					.from(userTable)
+					.where(
+						sql`${userTable.createdAt} >= ${Math.floor(weekAgo.getTime() / 1000)}`,
+					),
+				db
+					.select({ template: resumes.template, n: count() })
+					.from(resumes)
+					.groupBy(resumes.template)
+					.orderBy(desc(count())),
+				db
+					.select({ n: count() })
+					.from(subscriptions)
+					.where(
+						and(
+							eq(subscriptions.status, "active"),
+							gt(subscriptions.currentPeriodEnd, new Date()),
+						),
+					),
+				db
+					.select({ total: sum(payments.amount).mapWith(Number) })
+					.from(payments)
+					.where(eq(payments.status, "paid")),
+			],
+		);
 
 		return {
 			users: users.n,
@@ -58,6 +80,8 @@ export const adminStats = createServerFn({ method: "GET" })
 			templates: templateCount.n,
 			activeTemplates: activeTemplates.n,
 			byTemplate: byTemplate.map((r) => ({ template: r.template, n: r.n })),
+			activeSubscriptions: activeSubs.n,
+			revenueInr: revenue.total ?? 0,
 		};
 	});
 
@@ -301,5 +325,67 @@ export const deleteTemplate = createServerFn({ method: "POST" })
 			);
 		}
 		await db.delete(templates).where(eq(templates.id, id));
+		return { ok: true };
+	});
+
+/* ---------- Plans (pricing) ---------- */
+
+export const listPlansAdmin = createServerFn({ method: "GET" })
+	.middleware([adminMiddleware])
+	.handler(async () => {
+		const rows = await db
+			.select()
+			.from(plans)
+			.orderBy(asc(plans.priceInr), asc(plans.name));
+		return rows.map((r) => ({
+			id: r.id,
+			name: r.name,
+			priceInr: r.priceInr,
+			currency: r.currency,
+			durationDays: r.durationDays,
+			isActive: r.isActive,
+			updatedAt: r.updatedAt.getTime(),
+		}));
+	});
+
+/** Edits price/duration/name/active for an existing plan. Id is immutable. */
+export const updatePlan = createServerFn({ method: "POST" })
+	.middleware([adminMiddleware])
+	.validator(
+		(input: {
+			id: string;
+			name?: string;
+			priceInr?: number;
+			durationDays?: number;
+			isActive?: boolean;
+		}) => {
+			if (!isSlug(input.id)) throw new Error("Invalid plan id");
+			const name = str(input.name, 60);
+			if (!name) throw new Error("Name is required");
+			const priceInr = Math.trunc(Number(input.priceInr));
+			if (!Number.isFinite(priceInr) || priceInr < 1) {
+				throw new Error("Price must be a positive whole number of rupees");
+			}
+			const durationDays = Math.trunc(Number(input.durationDays));
+			if (!Number.isFinite(durationDays) || durationDays < 1) {
+				throw new Error("Duration must be at least 1 day");
+			}
+			return {
+				id: input.id,
+				name,
+				priceInr,
+				durationDays,
+				isActive: input.isActive !== false,
+			};
+		},
+	)
+	.handler(async ({ data }) => {
+		const { id, ...set } = data;
+		const res = await db
+			.update(plans)
+			.set({ ...set, updatedAt: new Date() })
+			.where(eq(plans.id, id))
+			.returning({ id: plans.id });
+		if (res.length === 0) throw new Error(`Plan "${id}" not found`);
 		return { ok: true };
 	});

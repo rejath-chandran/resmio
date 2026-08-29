@@ -9,6 +9,7 @@ import {
 	SkillsSection,
 } from "#/components/builder/editor";
 import { ResumeSheet } from "#/components/resume-preview/templates";
+import { getBillingState } from "#/lib/billing-functions";
 import { setPersister, useBuilderStore } from "#/lib/builder-store";
 import { exportResumeToPdf } from "#/lib/pdf-export";
 import { getResume, listTemplates, updateResume } from "#/lib/resume-functions";
@@ -31,6 +32,11 @@ function Builder() {
 		queryKey: ["templates"],
 		queryFn: () => listTemplates(),
 	});
+	const { data: billing } = useQuery({
+		queryKey: ["billing"],
+		queryFn: () => getBillingState(),
+	});
+	const pro = billing?.pro ?? false;
 
 	const load = useBuilderStore((s) => s.load);
 	useEffect(() => {
@@ -90,11 +96,20 @@ function Builder() {
 						    switching away is a choice, not a forced silent change. */}
 						{!active && <option value={template}>{template}</option>}
 						{templateList?.map((t) => (
-							<option key={t.id} value={t.id}>
+							<option key={t.id} value={t.id} disabled={t.isPro && !pro}>
 								{t.name}
+								{t.isPro ? (pro ? " ★" : " 🔒 Pro") : ""}
 							</option>
 						))}
 					</select>
+					{templateList?.some((t) => t.isPro) && !pro && (
+						<Link
+							to="/dashboard/billing"
+							className="text-xs text-brand-400 hover:text-brand-300"
+						>
+							Unlock Pro
+						</Link>
+					)}
 				</div>
 				<span className="text-xs text-neutral-500" aria-live="polite">
 					{status === "saving"

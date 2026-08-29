@@ -1,5 +1,10 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+	integer,
+	primaryKey,
+	sqliteTable,
+	text,
+} from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
 	id: text().primaryKey(),
@@ -111,3 +116,78 @@ export const resumes = sqliteTable("resumes", {
 		.notNull()
 		.default(sql`(unixepoch())`),
 });
+
+/* ---------- Billing ---------- */
+
+/** Purchasable plans. Prices/durations are admin-editable (see admin-functions). */
+export const plans = sqliteTable("plans", {
+	id: text().primaryKey(),
+	name: text().notNull(),
+	// Whole rupees (₹499). Cashfree order_amount is a decimal — we send priceInr.
+	priceInr: integer("price_inr").notNull(),
+	currency: text().notNull().default("INR"),
+	durationDays: integer("duration_days").notNull(),
+	isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
+/** A user's access window. Pro = a row with status 'active' and periodEnd > now. */
+export const subscriptions = sqliteTable("subscriptions", {
+	id: text().primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	planId: text("plan_id").notNull(),
+	// 'active' | 'expired' | 'cancelled'
+	status: text().notNull().default("active"),
+	currentPeriodEnd: integer("current_period_end", {
+		mode: "timestamp",
+	}).notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
+/** One Cashfree order. `id` doubles as the Cashfree order_id we supply. */
+export const payments = sqliteTable("payments", {
+	id: text().primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	planId: text("plan_id").notNull(),
+	// Rupees charged, snapshotted at checkout so later price edits don't rewrite history.
+	amount: integer().notNull(),
+	currency: text().notNull().default("INR"),
+	// 'created' | 'paid' | 'failed'
+	status: text().notNull().default("created"),
+	cfOrderId: text("cf_order_id"),
+	paymentSessionId: text("payment_session_id"),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
+/** Per-day AI call counter — enforces the free-tier daily cap. */
+export const aiUsage = sqliteTable(
+	"ai_usage",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		// UTC date 'YYYY-MM-DD'.
+		day: text().notNull(),
+		count: integer().notNull().default(0),
+	},
+	(t) => [primaryKey({ columns: [t.userId, t.day] })],
+);

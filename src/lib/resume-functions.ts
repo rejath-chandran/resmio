@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq } from "drizzle-orm";
 
 import { db } from "#/db";
 import { resumes, templates } from "#/db/schema";
 import { authMiddleware } from "#/lib/auth-middleware";
+import { FREE_RESUME_LIMIT, isProUser } from "#/lib/entitlements";
 import { emptyResume, parseResumeData } from "#/lib/resume-schema";
 import { isSlug, parseTheme, type TemplateTheme } from "#/lib/templates";
 
@@ -48,10 +49,10 @@ export const listTemplates = createServerFn({ method: "GET" })
 async function activeTemplate(id: string) {
 	if (!isSlug(id)) return null;
 	const [row] = await db
-		.select({ id: templates.id })
+		.select({ id: templates.id, isPro: templates.isPro })
 		.from(templates)
 		.where(and(eq(templates.id, id), eq(templates.isActive, true)));
-	return row?.id ?? null;
+	return row ?? null;
 }
 
 export const listResumes = createServerFn({ method: "GET" })
@@ -95,15 +96,33 @@ export const createResume = createServerFn({ method: "POST" })
 		template: input.template ?? "modern",
 	}))
 	.handler(async ({ context, data }) => {
+		const pro = await isProUser(context.user.id);
+
+		// Free tier is capped; Pro is unlimited.
+		if (!pro) {
+			const [{ n }] = await db
+				.select({ n: count() })
+				.from(resumes)
+				.where(eq(resumes.userId, context.user.id));
+			if (n >= FREE_RESUME_LIMIT) {
+				throw new Error(
+					`Free plan is limited to ${FREE_RESUME_LIMIT} resumes — upgrade to Pro for unlimited.`,
+				);
+			}
+		}
+
+		const chosen = await activeTemplate(data.template);
+		// Unknown/deactivated template, or a Pro template on the free plan, falls
+		// back rather than failing the create — the dropdown is the only valid source.
+		const template = chosen && (pro || !chosen.isPro) ? chosen.id : "modern";
+
 		const [row] = await db
 			.insert(resumes)
 			.values({
 				id: crypto.randomUUID(),
 				userId: context.user.id,
 				title: data.title,
-				// Unknown or deactivated template falls back rather than failing the
-				// create — the dropdown is the only place a valid id comes from.
-				template: (await activeTemplate(data.template)) ?? "modern",
+				template,
 				data: JSON.stringify(emptyResume()),
 			})
 			.returning();
@@ -139,10 +158,14 @@ export const updateResume = createServerFn({ method: "POST" })
 		},
 	)
 	.handler(async ({ context, data }) => {
-		const template =
-			data.template === undefined
-				? undefined
-				: ((await activeTemplate(data.template)) ?? undefined);
+		let template: string | undefined;
+		if (data.template !== undefined) {
+			const chosen = await activeTemplate(data.template);
+			if (chosen?.isPro && !(await isProUser(context.user.id))) {
+				throw new Error("That template is Pro-only — upgrade to use it.");
+			}
+			template = chosen?.id ?? undefined;
+		}
 		await db
 			.update(resumes)
 			.set({

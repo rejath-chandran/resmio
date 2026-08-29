@@ -14,12 +14,18 @@ and edit [Current state](#current-state) so it always describes *now*, not histo
 npm run dev                    # http://localhost:3000
 node ./e2e-smoke.mjs           # 18 UI checks, needs dev server up
 node ./pdf-export.check.mjs    # PDF export self-check, needs dev server up
+npx tsx ./billing.check.mjs    # webhook-signature + period-math self-check (no network)
 npm run build && npx tsc --noEmit && npx biome check src
 ```
 
 Env in `.env.local` (template: `.env.example`) — `DATABASE_URL` (default `dev.db`),
 `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (**set a real secret before deploying**),
-`OPENAI_API_KEY`, optional `OPENAI_BASE_URL` / `OPENAI_MODEL`.
+`OPENAI_API_KEY`, optional `OPENAI_BASE_URL` / `OPENAI_MODEL`, and for billing
+`CASHFREE_ENV` (`sandbox`|`production`), `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`
+(server-only — never in the client bundle). Billing degrades gracefully when unset.
+
+Seed the Pro plan once after `db:push`: `npm run db:seed:plans`. Webhook endpoint for
+Cashfree config: `POST {BETTER_AUTH_URL}/api/cashfree/webhook`.
 
 Schema changes: `npm run db:push`. Message changes: recompile paraglide with
 `npx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/paraglide`.
@@ -31,25 +37,27 @@ TanStack Start 1.170 (Vite 8) · SQLite via drizzle + better-sqlite3 · better-a
 · Tailwind v4 · zustand · framer-motion · paraglide v2 (en/de) · Biome · Playwright
 
 Decisions made with the user: AI provider is **OpenAI-compatible over `fetch`** (no SDK),
-DB is a **local file**, **no billing** yet.
+DB is a **local file**, billing is **Cashfree** (Indian PG) selling one admin-editable
+**Pro plan** (₹499 / 60 days).
 
 ## Current state
 
 Feature-complete and green: `npm run build` ✓, `tsc` ✓, `biome` ✓,
-e2e-smoke **18/18**, pdf-export check passing (filled 35424b vs empty 874b).
+e2e-smoke **18/18**, pdf-export check passing, `billing.check.mjs` passing.
 
 | Area | Where | Notes |
 |---|---|---|
 | Landing | `src/routes/index.tsx`, `src/components/landing/` | hero, features, how-it-works, pricing, testimonials, footer; framer-motion `whileInView`; SEO via `head()` |
 | Auth | `src/lib/auth.ts`, `routes/login.tsx`, `signup.tsx`, `routes/api/auth/$.ts` | better-auth email/password, drizzle adapter, `tanstackStartCookies()` |
 | Route guard | `src/routes/_authenticated.tsx` | `beforeLoad` → `/login?redirect=`; children live in `_authenticated/` |
-| Dashboard | `_authenticated/dashboard.index.tsx` | card grid, per-template mini previews, create/delete |
-| Builder | `_authenticated/dashboard.$resumeId.tsx`, `components/builder/editor.tsx` | basics/experience/education/skills, AI improve buttons |
+| Dashboard | `_authenticated/dashboard.index.tsx` | card grid, per-template mini previews, create/delete; free resume cap banner links to billing |
+| Builder | `_authenticated/dashboard.$resumeId.tsx`, `components/builder/editor.tsx` | basics/experience/education/skills, AI improve; Pro templates locked for free |
 | Autosave | `src/lib/builder-store.ts` | zustand + 800ms debounce; route injects the persister via `setPersister` |
 | Preview | `components/resume-preview/templates.tsx` | modern / classic / minimal, pure components |
 | PDF export | `src/lib/pdf-export.ts` + `src/routes/api/pdf.ts` | client clones `#resume-sheet` + page CSS → server renders with headless Chromium |
-| AI | `src/lib/ai-functions.ts` | OpenAI-compatible `chat/completions`; heuristic local fallback when no key |
-| i18n | `messages/{en,de}.json`, `src/start.ts`, `src/router.tsx` | paraglide `url` strategy; `/de/…` works |
+| AI | `src/lib/ai-functions.ts` | OpenAI-compatible `chat/completions`; heuristic fallback; free tier capped/day |
+| Billing | `src/lib/billing-functions.ts`, `billing-settle.ts`, `cashfree.ts`, `entitlements.ts`, `routes/_authenticated/dashboard.billing.tsx`, `routes/api/cashfree.webhook.ts` | Cashfree checkout + webhook + return-verify; server-verified entitlements; admin-editable plans at `/admin/plans` |
+| i18n | `messages/{en,de}.json`, `src/start.ts`, `src/router.tsx` | paraglide `url` strategy; `/de/…` works (admin/billing copy is English-only) |
 
 ### Deliberate simplifications (`ponytail:` comments in code)
 
@@ -60,7 +68,10 @@ e2e-smoke **18/18**, pdf-export check passing (filled 35424b vs empty 874b).
 - **Only session fetch is exposed** as a server fn (`src/lib/auth-functions.ts`) —
   user mutations stay internal to better-auth until a settings page exists.
 - **Single-page A4 export** — no pagination markers; add when resumes overflow one page.
-- **No billing** — pricing cards on the landing page are static.
+- **Free caps are constants** (`FREE_RESUME_LIMIT=2`, `FREE_AI_CALLS_PER_DAY=10` in
+  `src/lib/entitlements.ts`) — lift into the `plans` table if tiers ever diverge.
+- **Customer phone is a placeholder** (`"9999999999"` in `createCheckout`) — Cashfree
+  requires one and the user model has no phone field yet.
 
 ### Known risks / not done
 
@@ -147,3 +158,42 @@ Also, twice during this work the machine hit `ENOSPC` (228Gi volume, ~120Mi free
 and killed the dev server. `npm cache clean --force` reclaimed ~6.3GB but it refilled
 within minutes — if the dev server dies unexplained, check `df -h /` and
 `tmutil listlocalsnapshots /` first.
+
+### 2026-08-29 — Cashfree payments + Pro subscription
+
+Added billing end to end. Four tables (`plans`, `subscriptions`, `payments`,
+`aiUsage`), a Cashfree v2023-08-01 client over plain `fetch` (`src/lib/cashfree.ts`),
+entitlements (`src/lib/entitlements.ts`), and server fns (`src/lib/billing-functions.ts`).
+Flow: `createCheckout` inserts a `payments` row and creates a Cashfree order → the
+v3 SDK checkout (loaded via a dynamic `<script>`) → on return `confirmPayment`
+re-verifies the order server-side; a `POST /api/cashfree/webhook` does the same.
+Both share **one race-safe idempotent settle** (`settlePaidOrder`: conditional
+`UPDATE payments SET status='paid' WHERE id=? AND status!='paid' RETURNING` — only
+the winning row activates the subscription), so webhook vs return-verify grants Pro
+exactly once. Webhook signature (base64 HMAC-SHA256 of `timestamp+rawBody`) is
+verified before the payload is trusted (401 otherwise). Entitlements are enforced
+server-side (Pro templates, `FREE_RESUME_LIMIT`, `FREE_AI_CALLS_PER_DAY`); the client
+only mirrors the locks. Admins edit price/duration at `/admin/plans`; the dashboard
+shows Pro-subscriber count + revenue. `billing.check.mjs` asserts signature verify +
+period math with no network.
+
+The one that cost time — and the reason `billing.check` + build + tsc + biome all
+passed while the app was broken at runtime: **`billing-functions.ts` originally
+`export`ed `settlePaidOrder` (a plain, non-server-fn helper that touches `db`).**
+Because `dashboard-header.tsx` imports `getBillingState` from that same module, Vite
+kept the exported db-touching helper in the **client** bundle (server-fn *handler
+bodies* get stripped, but an exported module-scope function referencing `db` cannot be
+tree-shaken). That pulled `drizzle-orm/better-sqlite3` into the browser, where
+`util.promisify` is externalized → `TypeError: promisify is not a function`, logged
+by the dev server on **every** dashboard render. The retry storm wrote a **20 GB**
+dev log that filled the disk and killed the server — which is why e2e-smoke flaked at
+"New resume" (dashboard never mounted) with no obvious cause.
+
+Fix: moved `settlePaidOrder` + `activateSubscription` into a new server-only module
+`src/lib/billing-settle.ts`, imported statically by the webhook route and via a
+**dynamic `import()` inside the `confirmPayment` handler**. `billing-functions.ts` now
+exports only server fns, so it's client-safe — same rule as `src/lib/roles.ts`. Lesson:
+a server-fn file that any client component imports must export *only* server fns; any
+plain `db`-touching helper belongs in a separate server-only module. e2e-smoke back to
+18/18. (If the dev log ever balloons again, `ls -lh` the log and `df -h /` before
+anything else — a client-bundle db leak is the likely cause.)

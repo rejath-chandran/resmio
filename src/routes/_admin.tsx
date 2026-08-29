@@ -31,6 +31,7 @@ const TABS = [
 	{ to: "/admin", label: "Overview", exact: true },
 	{ to: "/admin/users", label: "Users", exact: false },
 	{ to: "/admin/templates", label: "Templates", exact: false },
+	{ to: "/admin/plans", label: "Plans", exact: false },
 ] as const;
 
 function AdminShell() {

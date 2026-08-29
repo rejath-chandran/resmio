@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { sql } from "drizzle-orm";
 
+import { db } from "#/db";
+import { aiUsage } from "#/db/schema";
 import { authMiddleware } from "#/lib/auth-middleware";
+import { FREE_AI_CALLS_PER_DAY, isProUser, utcDay } from "#/lib/entitlements";
 
 /**
  * AI text improvement. ponytail: prompt is a fixed template — when we add
@@ -13,7 +17,13 @@ export const improveText = createServerFn({ method: "POST" })
 		text: input.text.slice(0, 2000),
 		kind: input.kind === "bullet" ? ("bullet" as const) : ("summary" as const),
 	}))
-	.handler(async ({ data }) => {
+	.handler(async ({ context, data }) => {
+		// Free tier: capped AI calls per day. Pro: unlimited. Count before calling
+		// the model so a failed generation doesn't burn the quota silently.
+		if (!(await isProUser(context.user.id))) {
+			await enforceAiQuota(context.user.id);
+		}
+
 		const apiKey = process.env.OPENAI_API_KEY;
 		if (!apiKey)
 			return {
@@ -61,6 +71,27 @@ export const improveText = createServerFn({ method: "POST" })
 			};
 		}
 	});
+
+/**
+ * Atomically bumps today's AI counter and throws once the free cap is hit. The
+ * upsert makes the increment race-safe under concurrent calls.
+ */
+async function enforceAiQuota(userId: string) {
+	const day = utcDay();
+	const [row] = await db
+		.insert(aiUsage)
+		.values({ userId, day, count: 1 })
+		.onConflictDoUpdate({
+			target: [aiUsage.userId, aiUsage.day],
+			set: { count: sql`${aiUsage.count} + 1` },
+		})
+		.returning({ count: aiUsage.count });
+	if ((row?.count ?? 0) > FREE_AI_CALLS_PER_DAY) {
+		throw new Error(
+			`Free plan allows ${FREE_AI_CALLS_PER_DAY} AI edits per day — upgrade to Pro for unlimited.`,
+		);
+	}
+}
 
 const SYSTEM = `You are an expert resume writer. Rewrite the user's resume text to be concise, impactful and professional.
 - Use strong action verbs and quantify where plausible (never invent employers, dates, or credentials).
