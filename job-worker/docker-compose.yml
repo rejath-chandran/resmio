@@ -1,0 +1,40 @@
+# job-worker: 24h job ingestion for Resmio.
+# `docker compose up -d` on EC2. Worker scrapes ATS feeds -> Postgres+pgvector.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jobs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobs}
+      POSTGRES_DB: ${POSTGRES_DB:-jobs}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    ports:
+      - "${DB_PORT:-5432}:5432" # expose so the TanStack app can read jobs
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobs}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      JOBS_DATABASE_URL: postgresql://${POSTGRES_USER:-jobs}:${POSTGRES_PASSWORD:-jobs}@db:5432/${POSTGRES_DB:-jobs}
+      SCRAPE_INTERVAL_HOURS: ${SCRAPE_INTERVAL_HOURS:-6}
+      EMBED_PORT: ${EMBED_PORT:-8080}
+    ports:
+      - "${EMBED_PORT:-8080}:8080" # embed shim; restrict to the app IP in the security group
+    volumes:
+      - ./companies.yaml:/app/companies.yaml:ro
+      - modelcache:/root/.cache # keep the embed model between restarts
+
+volumes:
+  pgdata:
+  modelcache:

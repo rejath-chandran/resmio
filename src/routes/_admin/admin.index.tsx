@@ -76,12 +76,15 @@ function AdminOverview() {
 				)}
 			</section>
 
-			<div className="mt-8 flex gap-3">
+			<div className="mt-8 flex flex-wrap gap-3">
 				<Link to="/admin/users" className="btn-secondary">
 					Manage users
 				</Link>
 				<Link to="/admin/templates" className="btn-primary">
 					Manage templates
+				</Link>
+				<Link to="/admin/jobs" className="btn-secondary">
+					Job ingestion
 				</Link>
 			</div>
 		</main>

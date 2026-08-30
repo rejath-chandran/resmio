@@ -16,10 +16,13 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ApiPdfRouteImport } from './routes/api/pdf'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
+import { Route as AdminAdminJobsRouteImport } from './routes/_admin/admin.jobs'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
 import { Route as AuthenticatedDashboardResumeIdRouteImport } from './routes/_authenticated/dashboard.$resumeId'
 import { Route as AuthenticatedDashboardBillingRouteImport } from './routes/_authenticated/dashboard.billing'
+import { Route as AuthenticatedDashboardJobsRouteImport } from './routes/_authenticated/dashboard.jobs'
+import { Route as AuthenticatedDashboardSitesRouteImport } from './routes/_authenticated/dashboard.sites'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCashfreeWebhookRouteImport } from './routes/api/cashfree.webhook'
 import { Route as AdminAdminPlansIndexRouteImport } from './routes/_admin/admin.plans.index'
@@ -59,6 +62,11 @@ const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminJobsRoute = AdminAdminJobsRouteImport.update({
+  id: '/admin/jobs',
+  path: '/admin/jobs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -80,6 +88,18 @@ const AuthenticatedDashboardBillingRoute =
   AuthenticatedDashboardBillingRouteImport.update({
     id: '/dashboard/billing',
     path: '/dashboard/billing',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDashboardJobsRoute =
+  AuthenticatedDashboardJobsRouteImport.update({
+    id: '/dashboard/jobs',
+    path: '/dashboard/jobs',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDashboardSitesRoute =
+  AuthenticatedDashboardSitesRouteImport.update({
+    id: '/dashboard/sites',
+    path: '/dashboard/sites',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -115,9 +135,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/admin/jobs': typeof AdminAdminJobsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
+  '/dashboard/jobs': typeof AuthenticatedDashboardJobsRoute
+  '/dashboard/sites': typeof AuthenticatedDashboardSitesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cashfree/webhook': typeof ApiCashfreeWebhookRoute
   '/admin/': typeof AdminAdminIndexRoute
@@ -131,9 +154,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/admin/jobs': typeof AdminAdminJobsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
   '/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
+  '/dashboard/jobs': typeof AuthenticatedDashboardJobsRoute
+  '/dashboard/sites': typeof AuthenticatedDashboardSitesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cashfree/webhook': typeof ApiCashfreeWebhookRoute
   '/admin': typeof AdminAdminIndexRoute
@@ -150,9 +176,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/_admin/admin/jobs': typeof AdminAdminJobsRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
   '/_authenticated/dashboard/billing': typeof AuthenticatedDashboardBillingRoute
+  '/_authenticated/dashboard/jobs': typeof AuthenticatedDashboardJobsRoute
+  '/_authenticated/dashboard/sites': typeof AuthenticatedDashboardSitesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cashfree/webhook': typeof ApiCashfreeWebhookRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
@@ -168,9 +197,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/api/pdf'
+    | '/admin/jobs'
     | '/admin/users'
     | '/dashboard/$resumeId'
     | '/dashboard/billing'
+    | '/dashboard/jobs'
+    | '/dashboard/sites'
     | '/api/auth/$'
     | '/api/cashfree/webhook'
     | '/admin/'
@@ -184,9 +216,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/api/pdf'
+    | '/admin/jobs'
     | '/admin/users'
     | '/dashboard/$resumeId'
     | '/dashboard/billing'
+    | '/dashboard/jobs'
+    | '/dashboard/sites'
     | '/api/auth/$'
     | '/api/cashfree/webhook'
     | '/admin'
@@ -202,9 +237,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/api/pdf'
+    | '/_admin/admin/jobs'
     | '/_admin/admin/users'
     | '/_authenticated/dashboard/$resumeId'
     | '/_authenticated/dashboard/billing'
+    | '/_authenticated/dashboard/jobs'
+    | '/_authenticated/dashboard/sites'
     | '/api/auth/$'
     | '/api/cashfree/webhook'
     | '/_admin/admin/'
@@ -276,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/jobs': {
+      id: '/_admin/admin/jobs'
+      path: '/admin/jobs'
+      fullPath: '/admin/jobs'
+      preLoaderRoute: typeof AdminAdminJobsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/users': {
       id: '/_admin/admin/users'
       path: '/admin/users'
@@ -302,6 +347,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/billing'
       fullPath: '/dashboard/billing'
       preLoaderRoute: typeof AuthenticatedDashboardBillingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard/jobs': {
+      id: '/_authenticated/dashboard/jobs'
+      path: '/dashboard/jobs'
+      fullPath: '/dashboard/jobs'
+      preLoaderRoute: typeof AuthenticatedDashboardJobsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard/sites': {
+      id: '/_authenticated/dashboard/sites'
+      path: '/dashboard/sites'
+      fullPath: '/dashboard/sites'
+      preLoaderRoute: typeof AuthenticatedDashboardSitesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/api/auth/$': {
@@ -343,6 +402,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAdminJobsRoute: typeof AdminAdminJobsRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminTemplatesTemplateIdRoute: typeof AdminAdminTemplatesTemplateIdRoute
@@ -351,6 +411,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminJobsRoute: AdminAdminJobsRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminTemplatesTemplateIdRoute: AdminAdminTemplatesTemplateIdRoute,
@@ -363,12 +424,16 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardResumeIdRoute: typeof AuthenticatedDashboardResumeIdRoute
   AuthenticatedDashboardBillingRoute: typeof AuthenticatedDashboardBillingRoute
+  AuthenticatedDashboardJobsRoute: typeof AuthenticatedDashboardJobsRoute
+  AuthenticatedDashboardSitesRoute: typeof AuthenticatedDashboardSitesRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardResumeIdRoute: AuthenticatedDashboardResumeIdRoute,
   AuthenticatedDashboardBillingRoute: AuthenticatedDashboardBillingRoute,
+  AuthenticatedDashboardJobsRoute: AuthenticatedDashboardJobsRoute,
+  AuthenticatedDashboardSitesRoute: AuthenticatedDashboardSitesRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
 }
 

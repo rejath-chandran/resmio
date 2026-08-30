@@ -1,0 +1,35 @@
+# site-host: static portfolio hosting for Resmio.
+# `docker compose up -d --build` on EC2. Caddy serves *.resmio.in with auto HTTPS
+# from /srv/sites; the publisher shim is the only writer of that volume.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - sites:/srv/sites:ro
+      - caddy_data:/data # ACME certs — persist across restarts
+      - caddy_config:/config
+    depends_on:
+      - publisher
+
+  publisher:
+    build: .
+    restart: unless-stopped
+    environment:
+      SITE_PUBLISH_TOKEN: ${SITE_PUBLISH_TOKEN:?set SITE_PUBLISH_TOKEN in .env}
+      SITES_DIR: /srv/sites
+      PUBLISH_PORT: 8090
+    volumes:
+      - sites:/srv/sites # rw: the shim writes uploaded sites here
+    ports:
+      # Writer API — restrict :8090 ingress to the app server IP in the security group.
+      - "${PUBLISH_PORT:-8090}:8090"
+
+volumes:
+  sites:
+  caddy_data:
+  caddy_config:

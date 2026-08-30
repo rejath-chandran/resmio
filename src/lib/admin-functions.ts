@@ -389,3 +389,27 @@ export const updatePlan = createServerFn({ method: "POST" })
 		if (res.length === 0) throw new Error(`Plan "${id}" not found`);
 		return { ok: true };
 	});
+
+/**
+ * Job-ingestion health for the admin panel — reads the EC2 job store (job-worker).
+ * `jobs-db` (pg) is dynamically imported so it never enters the client bundle. Returns
+ * `configured:false` when EC2_JOBS_DATABASE_URL is unset, so the page renders cleanly.
+ */
+export const adminJobsStatus = createServerFn({ method: "GET" })
+	.middleware([adminMiddleware])
+	.handler(async () => {
+		if (!process.env.EC2_JOBS_DATABASE_URL) {
+			return { configured: false as const };
+		}
+		const { jobsStatus } = await import("#/lib/jobs-db");
+		try {
+			const status = await jobsStatus(30);
+			if (!status) return { configured: false as const };
+			return { configured: true as const, ...status };
+		} catch (e) {
+			// Surface the reason (unreachable DB, auth, etc.) so admins can diagnose.
+			throw new Error(
+				`Could not reach the job store: ${e instanceof Error ? e.message : String(e)}`,
+			);
+		}
+	});

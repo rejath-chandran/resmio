@@ -293,3 +293,230 @@ Verify: new `responsive.check.mjs` (Playwright) → **9/9** — no horizontal ov
 desktop with the button hidden. `npx tsc --noEmit`, `npx biome check src`, `npm run build`
 green; `node ./e2e-smoke.mjs` **18/18** (blank `OPENAI_API_KEY`; one cold-start flake that
 passes on warm rerun).
+
+### 2026-08-30 — AI Job Match (Pro) — phase 1: `job-worker/` ingestion service
+
+Standalone dockerized scraper (not wired into the app yet — that's phase 2). Lives in
+`job-worker/`, separate from the app: it owns a **Postgres+pgvector** store; the app will
+read it read-only. Decisions with the user: **self-scrape, no third-party job API**;
+Python + Scrapling toolchain; **Postgres+pgvector on EC2** (docker-compose); build the
+scraper first. Feature is an **index, not auto-apply** — every job links out to the origin.
+
+- **Sources = public ATS JSON first** (`worker/fetchers.py`): Greenhouse
+  (`boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true`) + Lever
+  (`api.lever.co/v0/postings/{slug}?mode=json`). No HTML scraping / anti-bot / maintenance.
+  Slugs curated in `companies.yaml` — growth = add slugs, not code. Scrapling is in
+  `requirements.txt` for tier-2 HTML boards but **unused in v1**.
+- **Normalize** (`worker/normalize.py`, pure/offline): raw → `Job`, tag-strip + entity
+  decode, `make_id = sha1(source:external_id)`, Lever epoch-ms → ISO, `dedup` (last wins).
+- **Embeddings** (`worker/embed.py`): fastembed `BAAI/bge-small-en-v1.5` (384-dim), local,
+  **$0/embed**, cached to a docker volume. `job_text()` kept symmetric with the app's future
+  `resumeToText()` so resume↔job vectors are comparable.
+- **DB** (`worker/db.py` + `schema.sql`): `jobs` table with `embedding vector(384)`, ivfflat
+  cosine index, `UNIQUE(source, external_id)`; `upsert_jobs` re-activates+re-stamps on
+  conflict; `deactivate_missing` sweeps stale (no-op on empty run for safety).
+- **Match** (`worker/match.py`): `1 - (embedding <=> vec)` cosine top-N — the reference query
+  the app's server fn will mirror.
+- **Loop** (`worker/main.py`): boot pass + APScheduler every `SCRAPE_INTERVAL_HOURS` (6).
+- **Runnable check**: `python check_ingest.py` (stdlib only, no network/db/deps) → asserts
+  normalize + dedup 3→2 + remote flags + id stability. **PASS**. All modules `py_compile` clean.
+
+Phase 2 (done 2026-08-30, see below): app-side Pro-gated `dashboard.jobs.tsx` +
+`src/lib/jobs-functions.ts` reading the EC2 store, embedding the resume via the worker shim,
+ranking + optional LLM re-rank, degrading when `EC2_*` unset.
+
+Security note in `job-worker/README.md`: never expose Postgres `5432` to `0.0.0.0` — restrict
+to the app server IP in the EC2 security group.
+
+### 2026-08-30 — Deployed job-worker to EC2 (phase 1)
+
+Deployed `job-worker/` to EC2 `3.83.35.75` (Ubuntu 26.04 x86_64, `ubuntu` user, `job_runner.pem`).
+
+- Installed Docker via `get.docker.com` (docker 29.7.2, compose v5.5.0); daemon enabled on boot,
+  `ubuntu` added to the `docker` group.
+- `rsync`'d `job-worker/` → `~/job-worker` (excluded `__pycache__`/`.env`).
+- Generated `.env` on the host — `POSTGRES_PASSWORD` = fresh 48-hex-char `openssl rand`
+  (chmod 600, never printed). Other keys default (user/db `jobs`, port 5432, interval 6h).
+- `docker compose up -d --build`: `db` (pgvector/pgvector:pg16) healthy + `worker` up, both
+  `restart=unless-stopped`. Boot pass ingested greenhouse feeds (stripe/airbnb/figma…),
+  embedding local (bge-small, 384-dim); 512+ rows, all embedded.
+- Verified `python -m worker.match "python backend engineer"` returns ranked jobs w/ apply links.
+
+App wiring (phase 2): `EC2_JOBS_DATABASE_URL=postgresql://jobs:<pw>@3.83.35.75:5432/jobs`
+(pw lives in `~/job-worker/.env` on the box).
+
+**OPEN SECURITY ITEM — needs AWS console/CLI, not doable from the box:** compose publishes
+`5432` on `0.0.0.0`. The EC2 security group must restrict `5432` ingress to the app server IP
+only. Until then Postgres is internet-reachable (password-protected, but exposed).
+
+### 2026-08-30 — AI Job Match (Pro) — phase 2: app wiring + embed shim
+
+Wired the app to the EC2 job store and shipped the Pro-gated jobs page.
+
+- **Embed shim** (phase-1 add, `job-worker/worker/serve.py`): stdlib `ThreadingHTTPServer` on
+  `:8080`, `POST /embed {text}` → `{embedding[384], dim}`, reusing the worker's lru-cached
+  bge-small model (one instance, shared with the scraper thread). No query prefix — symmetric
+  with `job_text()` so resume↔job vectors compare. Deployed + verified end-to-end on the box:
+  `/health` ok, `/embed` returns 384-dim, and that vector run through pgvector cosine ranks
+  backend/eng roles top. Started from `worker/main.py` on a daemon thread; port published in
+  `docker-compose.yml`. **Same security note: restrict `:8080` to the app IP — it's unauth'd.**
+- **App server fn** (`src/lib/jobs-functions.ts`, server-fns only — client-bundle rule): `matchJobs`
+  is Pro-gated (dynamic `isProUser`), loads the resume ownership-scoped, `resumeToText` → POST to
+  the shim → `matchByVector` (pgvector cosine, mirrors `match.py`) → optional OpenAI re-rank of the
+  top 15. Degrades to `{configured:false}` when `EC2_EMBED_URL`/`EC2_JOBS_DATABASE_URL` unset (like
+  billing); any shim/LLM failure falls back to plain vector order.
+- **DB access** (`src/lib/jobs-db.ts`, server-only): `pg` Pool from `EC2_JOBS_DATABASE_URL`,
+  dynamically imported so `pg` never enters the client bundle (verified: no `pg`/`jobs-db` in
+  `dist/client`). Pure helpers (`vecLiteral`, `parseRerankOrder`, `applyRerank`) split into
+  `jobs-rerank.ts` so the client route + offline check use them without touching `pg`.
+- **UI** (`routes/_authenticated/dashboard.jobs.tsx` + `Jobs` nav link): resume picker + optional
+  target-role box → ranked cards (score %, remote badge, "Apply ↗" opens the origin posting).
+  Non-pro sees a locked card → billing. `.env.example`/`.env.local` gained `EC2_EMBED_URL` +
+  `EC2_JOBS_DATABASE_URL`; `pg` added to vite `ssr.external`/`optimizeDeps.exclude` (like playwright).
+
+Vector parity: JS embeds nothing — the app calls the worker's Python fastembed, so resume and job
+vectors come from the *same* model+code. This is exactly the "tiny HTTP shim" `match.py` anticipated.
+
+Verify: `npx tsx ./jobs.check.mjs` → **PASS** (vecLiteral format + rerank parse/apply); `npx tsc
+--noEmit`, `npx biome check src`, `npm run build` all green. Not exercised locally against the live
+DB (needs the EC2 Postgres password + a Pro user); the shim→pgvector path was proven on the box.
+
+**Still open:** set `EC2_JOBS_DATABASE_URL` password in `.env.local` (from `~/job-worker/.env`), and
+the security-group lockdown of `5432`+`8080` to the app IP.
+
+## 2026-08-30 — Admin "Job ingestion" panel
+
+Admin can now see whether the scraper is alive from `/admin/jobs`.
+
+- **Server fn** `adminJobsStatus` (`src/lib/admin-functions.ts`, adminMiddleware, GET): returns
+  `{configured:false}` when `EC2_JOBS_DATABASE_URL` unset; else dynamic-imports `jobsStatus(30)` from
+  `jobs-db.ts` (keeps `pg` off the client), throws with reason on DB error.
+- **Read helper** `jobsStatus()` (`src/lib/jobs-db.ts`): one round-trip of 3 parallel queries —
+  totals (`count`, `active`, `embedded`, `max(fetched_at)`), per-`source` counts, and the 30 most
+  recently fetched rows.
+- **UI** `routes/_admin/admin.jobs.tsx` + overview link: 4 stat cards (Total/Active/Embedded/**Last
+  fetch** relative time = freshness = "is scraping running"), "By source" list, "Recently fetched"
+  table (title→origin link, company, source, fetched, state), Refresh button, amber "Not configured"
+  card.
+
+Verify: `npx tsr generate`, `npx tsc --noEmit`, `npx biome check src`, `npm run build` all green;
+`pg`/`jobs-db` absent from `dist/client`. Not exercised against the live DB locally — `5432` and
+`8080` both time out from this machine (SG allows only what it allows; safe posture). The panel
+populates when the app runs from a security-group-allowed host, or those ports are opened to the app
+IP.
+
+## 2026-08-30 — Job Match UX: drag-upload + manual search
+
+`/dashboard/jobs` reworked into two search modes so users don't need a saved resume.
+
+- **Backend** (`src/lib/jobs-functions.ts`, `matchJobs`): validator gained `queryText` (≤4000).
+  It wins over `resumeId` when present, so the handler embeds free text directly (manual
+  role/skills/location, or the text of a dropped file). `resumeId` still resolves an owned resume
+  when `queryText` empty; throws "Choose a resume or enter search terms" when both empty. Same
+  shim→pgvector→optional-rerank path; the embedded text also feeds the rerank prompt.
+- **UI** (`routes/_authenticated/dashboard.jobs.tsx`): segmented tabs "Use a resume" / "Search
+  manually". Resume tab = a drag-drop dropzone (native DnD + hidden file input, reads text via
+  `file.text()` — **.txt/.md only, ≤1 MB, zero deps**) with a filename chip, above an existing-resume
+  `<select>` (disabled while a file is loaded). Manual tab = Role / Skills / Location inputs. Shared
+  "Extra preferences" box. Results are richer cards: match %, remote badge, source hostname + posted
+  age, "Apply ↗" to the origin.
+  - ponytail: dropzone is text-only. PDF/DOCX resumes → build in-app ("Existing resume") or paste;
+    upgrade path is a client-side `pdfjs` parse behind the same dropzone.
+
+Verify: `npx biome check src`, `npx tsc --noEmit`, `npm run build` all green; `pg`/`jobs-db` still
+absent from `dist/client`. Live matching still needs the app to run from a security-group-allowed
+host (5432/8080 blocked from dev machine).
+
+## 2026-08-30 — Portfolio hosting (`<name>.resmio.online`, Pro)
+
+Cloudflare-Drop-style static hosting: Pro user drags portfolio files → live HTTPS site on the same
+EC2 box as `job-worker/`. Mirrors the Job Match pattern (stdlib HTTP shim on EC2 + Pro-gated server
+fn that degrades to `configured:false`). Full design in the approved plan.
+
+- **EC2 stack `site-host/`** (new): `caddy:2` + a stdlib Python `publisher.py` shim sharing a `sites`
+  volume. Caddy serves `/srv/sites/<label>/` for `*.resmio.online` with **on-demand TLS**, guarded
+  by `ask → publisher:/check` (200 iff the site exists) so only real sites get certs. Publisher
+  (`:8090`, Bearer `SITE_PUBLISH_TOKEN`): `POST /publish`, `DELETE /site/<p>`, open `GET /check`
+  +`/health`. Guards: project regex + reserved names, extension allowlist, `..`/absolute reject,
+  ≤25 files, ≤5 MB, `index.html` required, atomic temp-dir → `os.replace` swap. Smoke-tested locally:
+  publish/check/delete + unauth 401 + traversal/no-index/reserved rejects all correct.
+- **App**: `src/lib/sites-shared.ts` (pure, client-safe: `SUBDOMAIN_RE`, `RESERVED_SUBDOMAINS`,
+  `ALLOWED_EXT`, `subdomainError`, `safeRelPath` — mirrors publisher.py). `src/lib/sites-functions.ts`
+  (server-fn-only): `listSites`, `checkSubdomain`, `publishSite` (Pro-gated, validates+measures files,
+  POSTs to shim, upserts row), `deleteSite` (ownership-scoped, best-effort remote delete). New `sites`
+  table in `schema.ts` (unique `subdomain`, applied via `db:push`). Route
+  `dashboard.sites.tsx`: multi-file drag-drop (arrayBuffer→chunked base64, uniform for text+binary),
+  live subdomain availability, publish → live URL, "Your sites" list with Visit/Delete. `Sites` nav
+  link added.
+- **Env**: `SITE_PUBLISH_URL`, `SITE_PUBLISH_TOKEN`, `SITE_BASE_DOMAIN` in `.env.example`/`.env.local`.
+
+**Security**: better-auth cookie is host-only (confirmed `src/lib/auth.ts` sets no `domain`) — MUST
+stay that way so portfolio JS on sibling subdomains can't read the app session; app must live on a
+reserved host. User HTML/JS served only from its own origin (static, no exec). `:8090` writes disk →
+Bearer + **must be SG-restricted to the app IP**; `/check` is the only open path (boolean only).
+
+**Ops still open** (need DNS/AWS console — confirm before infra changes): `*.resmio.online` A →
+`3.83.35.75`; open `80`/`443`, restrict `8090` (and still-pending `5432`/`8080`) to the app IP;
+`rsync site-host/` + `docker compose up -d --build`; set `SITE_PUBLISH_TOKEN` in both `.env` files.
+
+Verify: `npx tsx ./sites.check.mjs` PASS; `npx tsr generate`, `npx tsc --noEmit`, `npx biome check
+src`, `npm run build`, `npm run db:push` all green; no `SITE_PUBLISH_TOKEN`/`sites-functions`/`pg` in
+`dist/client`.
+
+### 2026-08-30 — site-host deployed to EC2 (blocked on domain registration)
+
+Deployed the stack to `3.83.35.75`: `rsync site-host/` → `~/site-host` (excl. `__pycache__`), fresh
+`openssl rand -hex 32` token into `~/site-host/.env` (chmod 600) and app `.env.local`
+`SITE_PUBLISH_TOKEN`, `docker compose up -d --build`. Both containers Up:
+`site-host-caddy-1` (`0.0.0.0:80`,`:443`) and `site-host-publisher-1` (`0.0.0.0:8090`).
+
+On-box smoke test all correct: `/health` `{"ok":true}`; publish `smoketest` → `{"ok":true,files:1}`;
+`/check` 200 for it, 404 for unknown; unauthenticated publish → 401; delete → `{"ok":true}` and
+`/check` back to 404. Ports from dev machine: `80` open, `443` open, `8090` **closed** (already
+SG-restricted — no security-group change was needed or made).
+
+**BLOCKER — `resmio.online` is not registered/delegated.** The `.online` registry
+(`dig @64.96.1.1 resmio.online A`) returns **NXDOMAIN** with only the TLD `SOA`; no NS delegation
+exists, and `NS`/`SOA`/`A` are all empty via 1.1.1.1 and 8.8.8.8. A wildcard A record inside a
+Hostinger DNS zone does nothing until the domain is registered and its nameservers are delegated to
+Hostinger. Until then on-demand TLS cannot issue (Let's Encrypt must resolve the name), so no site is
+reachable by hostname. Everything server-side is otherwise ready — this needs no code change.
+
+Note for local dev: `.env.local` points at `http://3.83.35.75:8090`, which is SG-closed to the dev
+machine. Either add the dev IP to the `8090` rule or use
+`ssh -f -N -i job_runner.pem -L 8090:localhost:8090 ubuntu@3.83.35.75` and set
+`SITE_PUBLISH_URL=http://localhost:8090` (tunnel verified working).
+
+### 2026-08-30 — domain corrected to `resmio.in`; feature LIVE
+
+Real domain is `resmio.in` (not `.online`). Wildcard `*.resmio.in` → `3.83.35.75` confirmed
+resolving (Hostinger NS `*.dns-parking.com`). Replaced `resmio.online` → `resmio.in` everywhere:
+`Caddyfile`, `sites-functions.ts` (`baseDomain` default), `dashboard.sites.tsx` (`BASE_DOMAIN`),
+both `.env` files, README/comments. Redeployed: rsync + `docker compose up -d --build`; caddy needed
+`--force-recreate` to re-read the bind-mounted Caddyfile (a `caddy reload` alone kept the stale
+inode). EC2 `.env` `SITE_BASE_DOMAIN` set to `resmio.in`. `tsc --noEmit` clean.
+
+End-to-end verified live: published `demo` → `curl -I https://demo.resmio.in` = **HTTP/2 200** with a
+valid **Let's Encrypt** cert (`CN=demo.resmio.in`), body served, `x-content-type-options: nosniff`.
+Unknown subdomain `nope-nothere.resmio.in` → TLS `internal error` (on-demand `ask` returned 404, no
+cert issued — abuse protection working). Demo deleted afterwards. Ports: `80`/`443` open, `8090`
+SG-closed to the world. Feature is fully operational.
+
+### 2026-08-30 — folder upload (React/Vite build) + subdomain ownership hardening
+
+- **Folder upload**: `dashboard.sites.tsx` now accepts a whole build directory, preserving nested
+  paths. Drag-drop reads `DataTransferItem.webkitGetAsEntry()` recursively (`readEntry`/`pickedFromDrop`),
+  and a new "Upload folder" button uses `<input webkitdirectory>` (`pickedFromInput` reads
+  `webkitRelativePath`). New pure helper `rootPrefix(paths)` in `sites-shared.ts` rebases a
+  `build/`/`dist/` wrapper so its `index.html` becomes the site root; unit-tested in `sites.check.mjs`.
+  Verified live: nested `index.html` + `assets/app.js` + `assets/style.css` all served 200 over HTTPS
+  at `build-demo.resmio.in`.
+- **Limits raised** for real builds: `MAX_SITE_FILES` 25→200, `MAX_SITE_BYTES` 5→20 MB in both
+  `sites-shared.ts` and `publisher.py` (kept in sync); publisher payload cap now `MAX_TOTAL*2` for
+  base64 headroom. Publisher redeployed (`docker compose up -d --build publisher`), limits confirmed
+  in-container.
+- **Ownership**: already enforced (a subdomain owned by another user can't be published or checked
+  as available; `subdomain` has a unique index). Added a graceful catch on the insert race →
+  "That subdomain was just taken. Pick another." Live availability check on type was already present
+  (350 ms debounced `checkSubdomain`).
+- Verify: `sites.check` PASS, `tsc --noEmit` clean, `biome check` clean on all touched files.

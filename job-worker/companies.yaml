@@ -1,0 +1,13 @@
+# Curated ATS slugs. Growth = add slugs here, not code.
+# Find a slug from a company careers URL, e.g.
+#   boards.greenhouse.io/stripe        -> greenhouse: stripe
+#   jobs.lever.co/netflix              -> lever: netflix
+greenhouse:
+  - stripe
+  - airbnb
+  - figma
+lever:
+  # Add slugs from live jobs.lever.co/<slug> boards. Verify the board exists first
+  # (a dead slug just logs a 404 and is skipped). Left empty until verified.
+  []
+

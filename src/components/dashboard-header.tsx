@@ -30,6 +30,20 @@ export function DashboardHeader({
 				>
 					{m.nav_dashboard()}
 				</Link>
+				<Link
+					to="/dashboard/jobs"
+					className="text-sm text-neutral-400 transition-colors hover:text-white"
+					activeProps={{ className: "text-white" }}
+				>
+					Jobs
+				</Link>
+				<Link
+					to="/dashboard/sites"
+					className="text-sm text-neutral-400 transition-colors hover:text-white"
+					activeProps={{ className: "text-white" }}
+				>
+					Sites
+				</Link>
 				{user.role === "admin" && (
 					<Link
 						to="/admin"

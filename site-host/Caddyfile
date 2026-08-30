@@ -1,0 +1,26 @@
+# Serves every <name>.resmio.in from /srv/sites/<name>/ with automatic HTTPS.
+# On-demand TLS asks the publisher whether a subdomain is a real site before issuing
+# a cert — this is what stops cert-issuance abuse for arbitrary *.resmio.in names.
+{
+	on_demand_tls {
+		ask http://publisher:8090/check
+	}
+}
+
+*.resmio.in {
+	tls {
+		on_demand
+	}
+	root * /srv/sites/{labels.2}
+	file_server
+	encode gzip
+	header -Server
+	header X-Content-Type-Options nosniff
+	handle_errors {
+		respond "Site not found" 404
+	}
+}
+
+# ponytail: apex/app not fronted here yet. To serve the app from the same box add:
+#   resmio.in, app.resmio.in { reverse_proxy app:3000 }
+# (keep `app` in the publisher RESERVED set so nobody can publish over it).

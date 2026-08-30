@@ -117,6 +117,27 @@ export const resumes = sqliteTable("resumes", {
 		.default(sql`(unixepoch())`),
 });
 
+/** Hosted portfolio sites. One row per published `<subdomain>.resmio.in`. Files live on
+ * the EC2 box (served by Caddy); this table is the app's index + ownership record. */
+export const sites = sqliteTable("sites", {
+	id: text().primaryKey(),
+	userId: text("user_id")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	subdomain: text().notNull().unique(),
+	title: text().notNull().default(""),
+	sizeBytes: integer("size_bytes").notNull().default(0),
+	fileCount: integer("file_count").notNull().default(0),
+	// 'live' | 'disabled' (admin takedown)
+	status: text().notNull().default("live"),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
 /* ---------- Billing ---------- */
 
 /** Purchasable plans. Prices/durations are admin-editable (see admin-functions). */
