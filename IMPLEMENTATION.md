@@ -520,3 +520,15 @@ SG-closed to the world. Feature is fully operational.
   "That subdomain was just taken. Pick another." Live availability check on type was already present
   (350 ms debounced `checkSubdomain`).
 - Verify: `sites.check` PASS, `tsc --noEmit` clean, `biome check` clean on all touched files.
+
+### 2026-08-31 — Social login (Google + GitHub)
+
+- `src/lib/auth.ts`: `socialProviders()` registers google/github only when their
+  `*_CLIENT_ID`/`*_CLIENT_SECRET` env pair is set (graceful when unset).
+- `src/routes/login.tsx`: shared `SocialButtons` component (divider + two OAuth
+  buttons with brand icons) via `authClient.signIn.social({ provider, callbackURL })`;
+  reused in `signup.tsx`.
+- Messages: `auth_or`, `auth_continue_google`, `auth_continue_github` (en/de); paraglide recompiled.
+- Env: `GOOGLE_CLIENT_ID/SECRET`, `GITHUB_CLIENT_ID/SECRET` added to `.env.example`/`.env.local`.
+  OAuth callback URLs: `${BETTER_AUTH_URL}/api/auth/callback/{google,github}`.
+- Verify: `tsc --noEmit` clean, `biome check src` clean.

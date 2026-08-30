@@ -101,6 +101,9 @@
 	"auth_signup_link": "Sign up",
 	"auth_login_link": "Log in",
 	"auth_working": "Working…",
+	"auth_or": "or",
+	"auth_continue_google": "Continue with Google",
+	"auth_continue_github": "Continue with GitHub",
 	"auth_error_generic": "Something went wrong. Please try again.",
 
 	"dash_title": "Your resumes",

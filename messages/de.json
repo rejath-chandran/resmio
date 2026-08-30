@@ -101,6 +101,9 @@
 	"auth_signup_link": "Registrieren",
 	"auth_login_link": "Anmelden",
 	"auth_working": "Wird verarbeitet…",
+	"auth_or": "oder",
+	"auth_continue_google": "Weiter mit Google",
+	"auth_continue_github": "Weiter mit GitHub",
 	"auth_error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
 
 	"dash_title": "Deine Lebensläufe",

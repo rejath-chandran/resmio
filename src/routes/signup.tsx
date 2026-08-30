@@ -8,7 +8,7 @@ import { useState } from "react";
 import { authClient } from "#/lib/auth-client";
 import { getSession } from "#/lib/auth-functions";
 import { m } from "#/paraglide/messages";
-import { AuthField, AuthShell } from "#/routes/login";
+import { AuthField, AuthShell, SocialButtons } from "#/routes/login";
 
 export const Route = createFileRoute("/signup")({
 	validateSearch: (search: Record<string, unknown>) => {
@@ -101,6 +101,7 @@ function Signup() {
 					{pending ? m.auth_working() : m.auth_signup_cta()}
 				</button>
 			</form>
+			<SocialButtons redirect={search.redirect} />
 			<p className="mt-6 text-center text-sm text-neutral-400">
 				{m.auth_have_account()}{" "}
 				<Link
