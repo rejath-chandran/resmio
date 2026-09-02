@@ -1,0 +1,26 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "resmio",
+	"compatibility_date": "2026-08-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "@tanstack/react-start/server-entry",
+	"observability": { "enabled": true },
+	"vars": {
+		"BETTER_AUTH_URL": "https://resmio.gteckannur82.workers.dev",
+		"OPENAI_BASE_URL": "https://api.groq.com/openai/v1",
+		"OPENAI_MODEL": "openai/gpt-oss-120b",
+		"CASHFREE_ENV": "sandbox",
+		"SITE_BASE_DOMAIN": "resmio.in"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "resmio",
+			"database_id": "324fe2e8-04ee-42b7-a874-e0028e42b6ec",
+			"migrations_dir": "drizzle"
+		}
+	]
+	// PDF export + AI Job Match run as HTTP services on EC2 (free-tier: no Browser
+	// Rendering / Hyperdrive). Their URLs+tokens are secrets — set with
+	// `wrangler secret put PDF_RENDER_URL` etc. (see .dev.vars.example).
+}

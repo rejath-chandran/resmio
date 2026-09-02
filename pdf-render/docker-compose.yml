@@ -1,0 +1,7 @@
+services:
+  pdf-render:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8095:8095"
+    env_file: .env

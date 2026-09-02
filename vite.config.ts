@@ -1,4 +1,5 @@
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
@@ -8,12 +9,8 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
-	// playwright is server-only (PDF export) and ships native binaries that
-	// dependency optimization can't parse — keep it out of the bundle graph.
-	// pg is server-only (AI Job Match) and CJS with optional native deps.
-	optimizeDeps: { exclude: ["playwright", "pg"] },
-	ssr: { external: ["playwright", "pg"] },
 	plugins: [
+		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		devtools(),
 		paraglideVitePlugin({
 			project: "./project.inlang",

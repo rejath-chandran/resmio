@@ -1,0 +1,49 @@
+# Local dev secrets for the Cloudflare Worker (`vite dev` reads these via the
+# @cloudflare/vite-plugin). Copy to `.dev.vars` and fill. NEVER commit `.dev.vars`.
+# In production set each with `wrangler secret put <NAME>`.
+
+# Better Auth — generate: npx -y @better-auth/cli secret
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
+
+# Social login (optional) — each button only works when its pair is set
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# OpenAI-compatible AI (OpenAI, Groq, OpenRouter, local vLLM…)
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
+
+# Comma-separated emails auto-promoted to admin on login
+ADMIN_EMAILS=
+
+# Cashfree payments (Indian PG). Blank = billing degrades to "not configured".
+CASHFREE_ENV=sandbox
+CASHFREE_APP_ID=
+CASHFREE_SECRET_KEY=
+
+# PDF export — Chromium can't run in a Worker, so /api/pdf forwards to a Playwright
+# HTTP service on EC2 (see pdf-render/). Blank = PDF returns 503.
+PDF_RENDER_URL=            # https://<ec2-ip-or-host>:8095
+PDF_RENDER_TOKEN=          # shared bearer, must match pdf-render/.env
+
+# AI Job Match (Pro) — one jobs HTTP shim on EC2 (job-worker/worker/serve.py):
+# /embed (open) + /match, /status (Bearer). Same host:port for both URLs.
+# Blank = feature degrades to "not configured".
+EC2_EMBED_URL=             # http://<ec2-ip>:8080
+EC2_JOBS_URL=              # http://<ec2-ip>:8080  (same shim: /match, /status)
+EC2_JOBS_TOKEN=            # shared bearer = JOBS_SHIM_TOKEN in the shim's env
+
+# Portfolio hosting (Pro) — the site-host publisher shim on EC2
+SITE_PUBLISH_URL=          # http://<ec2-ip>:8090
+SITE_PUBLISH_TOKEN=        # same as SITE_PUBLISH_TOKEN in site-host/.env
+SITE_BASE_DOMAIN=resmio.in
+
+# Drizzle Kit → D1 over HTTP (only needed for `db:studio` / schema diffing).
+# Migrations apply via `wrangler d1 migrations apply` and don't need these.
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_DATABASE_ID=
+CLOUDFLARE_D1_TOKEN=

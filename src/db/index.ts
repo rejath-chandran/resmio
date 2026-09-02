@@ -1,5 +1,8 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { env } from "cloudflare:workers";
+import { drizzle } from "drizzle-orm/d1";
 
 import * as schema from "./schema.ts";
 
-export const db = drizzle(process.env.DATABASE_URL ?? "dev.db", { schema });
+// D1 binding declared in wrangler.jsonc (`binding: "DB"`). The cloudflare:workers
+// `env` proxy exposes bindings at module scope, so `db` stays a plain export.
+export const db = drizzle(env.DB, { schema });

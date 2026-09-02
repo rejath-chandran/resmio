@@ -29,8 +29,9 @@ services:
       JOBS_DATABASE_URL: postgresql://${POSTGRES_USER:-jobs}:${POSTGRES_PASSWORD:-jobs}@db:5432/${POSTGRES_DB:-jobs}
       SCRAPE_INTERVAL_HOURS: ${SCRAPE_INTERVAL_HOURS:-6}
       EMBED_PORT: ${EMBED_PORT:-8080}
+      JOBS_SHIM_TOKEN: ${JOBS_SHIM_TOKEN:?set JOBS_SHIM_TOKEN in .env} # Bearer for /match,/status
     ports:
-      - "${EMBED_PORT:-8080}:8080" # embed shim; restrict to the app IP in the security group
+      - "${EMBED_PORT:-8080}:8080" # shim: /embed(open)+/match,/status(Bearer); restrict to app IP
     volumes:
       - ./companies.yaml:/app/companies.yaml:ro
       - modelcache:/root/.cache # keep the embed model between restarts

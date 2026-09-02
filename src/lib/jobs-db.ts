@@ -1,27 +1,36 @@
 /**
- * Read-only access to the job-worker's Postgres+pgvector store (on EC2). Server-only —
- * dynamically imported inside a server-fn handler so `pg` never reaches the client
- * bundle (same rule as src/lib/roles.ts). Degrades to null when unconfigured.
+ * Read access to the job-worker's Postgres+pgvector store, via the EC2 jobs HTTP
+ * shim (Workers can't hold Postgres connections — free-tier: no Hyperdrive). The
+ * shim runs the cosine match / status queries and returns JSON. Degrades to
+ * empty/null when EC2_JOBS_URL / EC2_JOBS_TOKEN are unset.
  */
-import { Pool } from "pg";
 
-import { vecLiteral } from "#/lib/jobs-rerank";
+const TIMEOUT_MS = 8000;
 
-let pool: Pool | null = null;
+function shimEnv(): { url: string; token: string } | null {
+	const url = process.env.EC2_JOBS_URL;
+	const token = process.env.EC2_JOBS_TOKEN;
+	return url && token ? { url: url.replace(/\/$/, ""), token } : null;
+}
 
-/** Lazily builds a small pool from EC2_JOBS_DATABASE_URL; null when the env is unset. */
-export function jobsPool(): Pool | null {
-	const url = process.env.EC2_JOBS_DATABASE_URL;
-	if (!url) return null;
-	if (!pool) {
-		// Small pool + short timeout: this is a remote read for one interactive request.
-		pool = new Pool({
-			connectionString: url,
-			max: 4,
-			connectionTimeoutMillis: 5000,
+async function shimPost<T>(path: string, body: unknown): Promise<T | null> {
+	const env = shimEnv();
+	if (!env) return null;
+	try {
+		const res = await fetch(`${env.url}${path}`, {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				authorization: `Bearer ${env.token}`,
+			},
+			body: JSON.stringify(body),
+			signal: AbortSignal.timeout(TIMEOUT_MS),
 		});
+		if (!res.ok) return null;
+		return (await res.json()) as T;
+	} catch {
+		return null;
 	}
-	return pool;
 }
 
 export type JobRow = {
@@ -35,33 +44,13 @@ export type JobRow = {
 	score: number;
 };
 
-/** Cosine top-N over active, embedded jobs. Mirrors worker/match.py. */
+/** Cosine top-N over active, embedded jobs. The EC2 shim mirrors worker/match.py. */
 export async function matchByVector(
 	vec: number[],
 	limit: number,
 ): Promise<JobRow[]> {
-	const p = jobsPool();
-	if (!p) return [];
-	const v = vecLiteral(vec);
-	const { rows } = await p.query(
-		`SELECT id, title, company, location, remote, url, posted_at,
-		        1 - (embedding <=> $1::vector) AS score
-		 FROM jobs
-		 WHERE active = true AND embedding IS NOT NULL
-		 ORDER BY embedding <=> $1::vector
-		 LIMIT $2`,
-		[v, limit],
-	);
-	return rows.map((r) => ({
-		id: r.id,
-		title: r.title,
-		company: r.company,
-		location: r.location,
-		remote: r.remote,
-		url: r.url,
-		postedAt: r.posted_at ? new Date(r.posted_at).getTime() : null,
-		score: Number(r.score),
-	}));
+	const rows = await shimPost<JobRow[]>("/match", { vec, limit });
+	return rows ?? [];
 }
 
 export type JobsStatus = {
@@ -82,44 +71,5 @@ export type JobsStatus = {
 
 /** Ingestion health for the admin panel: counts, freshness, per-source, recent rows. */
 export async function jobsStatus(recentLimit = 30): Promise<JobsStatus | null> {
-	const p = jobsPool();
-	if (!p) return null;
-	const [totals, sources, recent] = await Promise.all([
-		p.query(
-			`SELECT count(*) total,
-			        count(*) FILTER (WHERE active) active,
-			        count(*) FILTER (WHERE embedding IS NOT NULL) embedded,
-			        max(fetched_at) last_fetched
-			 FROM jobs`,
-		),
-		p.query(
-			`SELECT source, count(*) n, count(*) FILTER (WHERE active) active
-			 FROM jobs GROUP BY source ORDER BY n DESC`,
-		),
-		p.query(
-			`SELECT title, company, source, fetched_at, active, url
-			 FROM jobs ORDER BY fetched_at DESC NULLS LAST LIMIT $1`,
-			[recentLimit],
-		),
-	]);
-	const t = totals.rows[0];
-	return {
-		total: Number(t.total),
-		active: Number(t.active),
-		embedded: Number(t.embedded),
-		lastFetchedAt: t.last_fetched ? new Date(t.last_fetched).getTime() : null,
-		bySource: sources.rows.map((r) => ({
-			source: r.source,
-			n: Number(r.n),
-			active: Number(r.active),
-		})),
-		recent: recent.rows.map((r) => ({
-			title: r.title,
-			company: r.company,
-			source: r.source,
-			fetchedAt: r.fetched_at ? new Date(r.fetched_at).getTime() : null,
-			active: r.active,
-			url: r.url,
-		})),
-	};
+	return shimPost<JobsStatus>("/status", { recentLimit });
 }

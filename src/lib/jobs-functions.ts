@@ -43,7 +43,7 @@ export const matchJobs = createServerFn({ method: "POST" })
 		}
 
 		const embedUrl = process.env.EC2_EMBED_URL;
-		if (!embedUrl || !process.env.EC2_JOBS_DATABASE_URL) {
+		if (!embedUrl || !process.env.EC2_JOBS_URL) {
 			return {
 				configured: false as const,
 				jobs: [] as JobRow[],

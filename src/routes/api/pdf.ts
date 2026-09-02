@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { chromium } from "playwright";
 
 import { auth } from "#/lib/auth";
 
 const MAX_BODY = 2_000_000; // ~2MB of markup+CSS is plenty for one A4 sheet
 
 /**
- * Renders preview markup to an A4 PDF with headless Chromium.
- * Session-gated: it would otherwise be an open HTML renderer.
- * ponytail: launches a browser per request — pool or move to a worker if
- * export traffic grows past occasional clicks.
+ * Renders preview markup to an A4 PDF. Chromium can't run inside a Worker, so the
+ * render is offloaded to the EC2 PDF service (Playwright), same shim pattern as
+ * portfolio hosting / job-match. This route stays the session gate + validator and
+ * forwards the payload; the browser never touches the EC2 URL directly.
+ *
+ * Degrades to 503 when PDF_RENDER_URL / PDF_RENDER_TOKEN are unset.
  */
 export const Route = createFileRoute("/api/pdf")({
 	server: {
@@ -19,6 +20,11 @@ export const Route = createFileRoute("/api/pdf")({
 					headers: request.headers,
 				});
 				if (!session) return new Response("Unauthorized", { status: 401 });
+
+				const url = process.env.PDF_RENDER_URL;
+				const token = process.env.PDF_RENDER_TOKEN;
+				if (!url || !token)
+					return new Response("PDF rendering not configured", { status: 503 });
 
 				const raw = await request.text();
 				if (raw.length > MAX_BODY)
@@ -36,30 +42,22 @@ export const Route = createFileRoute("/api/pdf")({
 						status: 400,
 					});
 
-				const browser = await chromium.launch();
-				try {
-					const page = await browser.newPage();
-					// Block all outbound requests: the markup is self-contained, and this
-					// keeps user-supplied HTML from making the server fetch anything.
-					await page.route("**/*", (route) => route.abort());
-					await page.setContent(
-						`<!doctype html><html><head><meta charset="utf-8"><style>${styles}</style></head><body>${content}</body></html>`,
-						{ waitUntil: "domcontentloaded" },
-					);
-					const pdf = await page.pdf({
-						format: "A4",
-						printBackground: true,
-						margin: { top: "0", right: "0", bottom: "0", left: "0" },
-					});
-					return new Response(new Uint8Array(pdf), {
-						headers: {
-							"Content-Type": "application/pdf",
-							"Content-Disposition": 'attachment; filename="resume.pdf"',
-						},
-					});
-				} finally {
-					await browser.close();
-				}
+				const res = await fetch(`${url.replace(/\/$/, "")}/render`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ content, styles }),
+				});
+				if (!res.ok) return new Response("PDF render failed", { status: 502 });
+
+				return new Response(res.body, {
+					headers: {
+						"Content-Type": "application/pdf",
+						"Content-Disposition": 'attachment; filename="resume.pdf"',
+					},
+				});
 			},
 		},
 	},

@@ -391,14 +391,14 @@ export const updatePlan = createServerFn({ method: "POST" })
 	});
 
 /**
- * Job-ingestion health for the admin panel — reads the EC2 job store (job-worker).
- * `jobs-db` (pg) is dynamically imported so it never enters the client bundle. Returns
- * `configured:false` when EC2_JOBS_DATABASE_URL is unset, so the page renders cleanly.
+ * Job-ingestion health for the admin panel — reads the EC2 job store via the jobs
+ * HTTP shim. `jobs-db` is dynamically imported so it never enters the client bundle.
+ * Returns `configured:false` when EC2_JOBS_URL is unset, so the page renders cleanly.
  */
 export const adminJobsStatus = createServerFn({ method: "GET" })
 	.middleware([adminMiddleware])
 	.handler(async () => {
-		if (!process.env.EC2_JOBS_DATABASE_URL) {
+		if (!process.env.EC2_JOBS_URL) {
 			return { configured: false as const };
 		}
 		const { jobsStatus } = await import("#/lib/jobs-db");

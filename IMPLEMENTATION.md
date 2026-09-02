@@ -11,30 +11,40 @@ and edit [Current state](#current-state) so it always describes *now*, not histo
 ## Run it
 
 ```bash
-npm run dev                    # http://localhost:3000
-node ./e2e-smoke.mjs           # 18 UI checks, needs dev server up
-node ./pdf-export.check.mjs    # PDF export self-check, needs dev server up
-npx tsx ./billing.check.mjs    # webhook-signature + period-math self-check (no network)
+npm run dev                    # local Worker (Cloudflare vite plugin) http://localhost:3000
+npm run db:migrate             # apply drizzle/ migrations to local D1
+npm run db:seed:plans && npm run db:seed   # seed plans + templates (local D1)
 npm run build && npx tsc --noEmit && npx biome check src
+npm run deploy                 # vite build && wrangler deploy (needs D1 id + secrets set)
 ```
 
-Env in `.env.local` (template: `.env.example`) — `DATABASE_URL` (default `dev.db`),
-`BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` (**set a real secret before deploying**),
-`OPENAI_API_KEY`, optional `OPENAI_BASE_URL` / `OPENAI_MODEL`, and for billing
-`CASHFREE_ENV` (`sandbox`|`production`), `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`
-(server-only — never in the client bundle). Billing degrades gracefully when unset.
+Local dev secrets in `.dev.vars` (template: `.dev.vars.example`). Prod: `wrangler
+secret put <NAME>` for each secret, non-secret vars live in `wrangler.jsonc`. Create the
+D1 db with `wrangler d1 create resmio` and paste the id into `wrangler.jsonc`.
+`:remote` variants of the db scripts target the deployed D1.
 
-Seed the Pro plan once after `db:push`: `npm run db:seed:plans`. Webhook endpoint for
-Cashfree config: `POST {BETTER_AUTH_URL}/api/cashfree/webhook`.
+EC2 offload services (deploy separately, tokens must match the Worker's secrets):
+`pdf-render/` (Playwright PDF, `PDF_RENDER_TOKEN`) and `job-worker/` (embed + jobs
+shim, `JOBS_SHIM_TOKEN` = the Worker's `EC2_JOBS_TOKEN`). `docker compose up -d` each.
 
-Schema changes: `npm run db:push`. Message changes: recompile paraglide with
-`npx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/paraglide`.
-New/moved routes: `npx tsr generate`.
+Secrets/vars (`.dev.vars` local, `wrangler secret`/`vars` in prod) — `BETTER_AUTH_URL`,
+`BETTER_AUTH_SECRET` (**set a real secret before deploying**), `OPENAI_API_KEY`, optional
+`OPENAI_BASE_URL` / `OPENAI_MODEL`, and for billing `CASHFREE_ENV` (`sandbox`|`production`),
+`CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY` (server-only). Optional social login + EC2 offload
+keys listed in `.dev.vars.example`. Billing/social/offload degrade gracefully when unset.
+
+Seed the Pro plan once: `npm run db:seed:plans`. Webhook endpoint for Cashfree config:
+`POST {BETTER_AUTH_URL}/api/cashfree/webhook`.
+
+Schema changes: `npx drizzle-kit generate` then `npm run db:migrate(:remote)`. Message
+changes: recompile paraglide with `npx @inlang/paraglide-js compile --project
+./project.inlang --outdir ./src/paraglide`. New/moved routes: `npx tsr generate`.
 
 ## Stack
 
-TanStack Start 1.170 (Vite 8) · SQLite via drizzle + better-sqlite3 · better-auth 1.5
-· Tailwind v4 · zustand · framer-motion · paraglide v2 (en/de) · Biome · Playwright
+TanStack Start 1.170 (Vite 8) · **Cloudflare Workers** (D1 SQLite via drizzle-orm/d1)
+· better-auth 1.5 · Tailwind v4 · zustand · framer-motion · paraglide v2 (en/de) · Biome
+· PDF + job-match offloaded to EC2 HTTP shims (Playwright / pgvector)
 
 Decisions made with the user: AI provider is **OpenAI-compatible over `fetch`** (no SDK),
 DB is a **local file**, billing is **Cashfree** (Indian PG) selling one admin-editable
@@ -54,7 +64,7 @@ e2e-smoke **18/18**, pdf-export check passing, `billing.check.mjs` passing.
 | Builder | `_authenticated/dashboard.$resumeId.tsx`, `components/builder/editor.tsx` | basics/experience/education/skills, AI improve; Pro templates locked for free |
 | Autosave | `src/lib/builder-store.ts` | zustand + 800ms debounce; route injects the persister via `setPersister` |
 | Preview | `components/resume-preview/templates.tsx` | modern / classic / minimal, pure components |
-| PDF export | `src/lib/pdf-export.ts` + `src/routes/api/pdf.ts` | client clones `#resume-sheet` + page CSS → server renders with headless Chromium |
+| PDF export | `src/lib/pdf-export.ts` + `src/routes/api/pdf.ts` | client clones `#resume-sheet` + page CSS → Worker forwards to the EC2 `pdf-render/` Playwright shim, streams PDF back |
 | AI | `src/lib/ai-functions.ts` | OpenAI-compatible `chat/completions`; heuristic fallback; free tier capped/day |
 | Billing | `src/lib/billing-functions.ts`, `billing-settle.ts`, `cashfree.ts`, `entitlements.ts`, `routes/_authenticated/dashboard.billing.tsx`, `routes/api/cashfree.webhook.ts` | Cashfree checkout + webhook + return-verify; server-verified entitlements; admin-editable plans at `/admin/plans` |
 | i18n | `messages/{en,de}.json`, `src/start.ts`, `src/router.tsx` | paraglide `url` strategy; `/de/…` works (admin/billing copy is English-only) |
@@ -77,8 +87,9 @@ e2e-smoke **18/18**, pdf-export check passing, `billing.check.mjs` passing.
 
 - `BETTER_AUTH_SECRET` is empty in `.env.local` — must be set before any deploy.
 - AI path only exercised via the fallback; never tested against a live API key.
-- Playwright is a **runtime** dependency (the PDF route imports it) and is excluded
-  from the Vite bundle graph in `vite.config.ts` — see 2026-08-29 entry for why.
+- PDF + job-match now run on EC2 HTTP shims (`pdf-render/`, `job-worker/`) — the app
+  degrades (503 / empty) when their URLs+tokens are unset. Restrict both ports to the
+  Worker egress IP; rotate the shared GitHub OAuth secret before deploy.
 - No rate limit on `/api/pdf` beyond the session check and 2MB body cap.
 
 ---
@@ -532,3 +543,42 @@ SG-closed to the world. Feature is fully operational.
 - Env: `GOOGLE_CLIENT_ID/SECRET`, `GITHUB_CLIENT_ID/SECRET` added to `.env.example`/`.env.local`.
   OAuth callback URLs: `${BETTER_AUTH_URL}/api/auth/callback/{google,github}`.
 - Verify: `tsc --noEmit` clean, `biome check src` clean.
+
+### 2026-08-31 — Cloudflare Workers deploy (free tier + EC2 offload)
+
+Ported the app to run serverless on Cloudflare Workers. Workers is a V8-isolate
+runtime — no native modules, no filesystem, no long-lived process — so three
+subsystems changed. Chose the **free tier**: keep app + DB on Cloudflare (D1),
+offload the two things that need a browser / a Postgres connection to HTTP
+services on the existing EC2 box (avoids paid-only Browser Rendering + Hyperdrive).
+
+- **DB → D1.** `src/db/index.ts` now `drizzle(env.DB)` from `drizzle-orm/d1`; schema
+  was already sqlite dialect so **no table changes**. `src/lib/auth.ts` +
+  `src/db/index.ts` read config from `cloudflare:workers` `env` (process.env is empty
+  at module scope on Workers). `drizzle.config.ts` → `driver: "d1-http"`. Migrations
+  in `drizzle/` via `wrangler d1 migrations apply resmio`; seeds are SQL files
+  (`drizzle/seed-plans.sql`, `seed-templates.sql`) applied with `wrangler d1 execute`.
+  Dropped `better-sqlite3`; `src/db/seed-*.ts` deleted.
+- **PDF → EC2 Playwright shim.** `src/routes/api/pdf.ts` stays session-gate + validator,
+  now forwards `{content, styles}` to `PDF_RENDER_URL/render` (Bearer `PDF_RENDER_TOKEN`)
+  and streams the PDF back. New `pdf-render/` service (`server.py` stdlib http +
+  Playwright, `Dockerfile` on the official playwright/python image, compose, README).
+  503 when unset. Dropped `playwright` from the app.
+- **Job-match → EC2 jobs shim.** `src/lib/jobs-db.ts` dropped the `pg` Pool; now POSTs
+  to `EC2_JOBS_URL` `/match` + `/status` (Bearer `EC2_JOBS_TOKEN`), 8s timeout, same
+  `JobRow`/`JobsStatus` shape so callers are unchanged. Extended the existing
+  `job-worker/worker/serve.py` embed shim with authed `/match` (pgvector cosine, mirrors
+  `match.py`) + `/status`; `/embed` stays open. Same host:port as the embed shim (8080);
+  `JOBS_SHIM_TOKEN` added to `job-worker` compose + `.env.example`. Dropped `pg`.
+- **Config.** New `wrangler.jsonc` (name `resmio`, `nodejs_compat`, D1 binding, no browser
+  binding). `.dev.vars.example` for local dev; `.dev.vars` + `worker-configuration.d.ts`
+  gitignored. Scripts: `deploy`, `cf-typegen`, `db:migrate(:remote)`, `db:seed*(:remote)`.
+- Verify: `tsc --noEmit` clean, `biome check src` clean, both Python shims `py_compile`
+  clean. Not yet run: live `wrangler deploy` (needs D1 create + secrets set on the
+  account) and the EC2 services deployed.
+
+**Before going live:** create the D1 db (`wrangler d1 create resmio` → paste id into
+`wrangler.jsonc`), `wrangler secret put` each secret (generate a real
+`BETTER_AUTH_SECRET`, **rotate the shared GitHub OAuth secret**), point OAuth callback
+URLs at the prod origin, and `docker compose up -d` both EC2 services with matching
+tokens, restricting their ports to the Worker's egress IP.
