@@ -50,7 +50,10 @@ export const Route = createFileRoute("/api/pdf")({
 					},
 					body: JSON.stringify({ content, styles }),
 				});
-				if (!res.ok) return new Response("PDF render failed", { status: 502 });
+				if (!res.ok)
+					return new Response(`PDF render failed: ${res.status}`, {
+						status: 502,
+					});
 
 				return new Response(res.body, {
 					headers: {

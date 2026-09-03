@@ -3,5 +3,10 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "8095:8095"
+      # ponytail: host port 2052 (8443 was used during a Cloudflare egress test).
+      # Workers can't fetch bare IPs — PDF_RENDER_URL must be a hostname
+      # (currently http://test.resmio.in:8443 via Caddy). Add when a proper
+      # grey-cloud hostname exists: point it at Caddy :443 instead of raw port.
+      - "2052:8095"
+      - "8443:8095" # Worker egress goes here via http://test.resmio.in:8443
     env_file: .env

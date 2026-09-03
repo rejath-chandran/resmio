@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/start-server-core/request-response";
 
-import { auth } from "#/lib/auth";
 import { authMiddleware } from "#/lib/auth-middleware";
 
 /**
@@ -11,6 +10,9 @@ import { authMiddleware } from "#/lib/auth-middleware";
  */
 export const getSession = createServerFn({ method: "GET" }).handler(
 	async () => {
+		// Imported inside the handler: better-auth's server bundle (~25KB gz) must
+		// not ship to the browser on routes that only need `getSession`.
+		const { auth } = await import("#/lib/auth");
 		const session = await auth.api.getSession({
 			headers: getRequest().headers,
 		});

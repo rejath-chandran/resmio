@@ -1,17 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
 
 import { m } from "#/paraglide/messages";
 
-const fadeUp = {
-	initial: { opacity: 0, y: 24 },
-	whileInView: { opacity: 1, y: 0 },
-	viewport: { once: true, margin: "-80px" },
-	transition: { duration: 0.55, ease: "easeOut" as const },
-};
-
-export { fadeUp };
-
+// Animations are CSS keyframes (.reveal in styles.css), not framer-motion:
+// motion elements start at opacity:0 and only animate after JS hydrates, which
+// delayed the hero H1 (the LCP element) by ~1.5s on the landing page.
 export function Hero() {
 	return (
 		<section className="relative overflow-hidden pt-36 pb-20">
@@ -22,66 +15,72 @@ export function Hero() {
 			</div>
 
 			<div className="relative mx-auto max-w-6xl px-6 text-center">
-				<motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0 }}>
+				<Reveal>
 					<span className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1.5 text-xs font-medium text-brand-300">
 						<span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
 						{m.hero_badge()}
 					</span>
-				</motion.div>
+				</Reveal>
 
-				<motion.h1
-					{...fadeUp}
-					transition={{ ...fadeUp.transition, delay: 0.08 }}
-					className="mx-auto mt-6 max-w-3xl font-display text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl"
-				>
+				{/* No reveal animation on the H1: it is the LCP element — any
+				    opacity/transform animation postpones its paint. */}
+				<h1 className="mx-auto mt-6 max-w-3xl font-display text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl">
 					{m.hero_title_1()}{" "}
 					<span className="bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent">
 						{m.hero_title_highlight()}
 					</span>
-				</motion.h1>
+				</h1>
 
-				<motion.p
-					{...fadeUp}
-					transition={{ ...fadeUp.transition, delay: 0.16 }}
-					className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-neutral-400"
-				>
-					{m.hero_subtitle()}
-				</motion.p>
+				<Reveal delay={0.16}>
+					<p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-neutral-400">
+						{m.hero_subtitle()}
+					</p>
+				</Reveal>
 
-				<motion.div
-					{...fadeUp}
-					transition={{ ...fadeUp.transition, delay: 0.24 }}
-					className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
-				>
-					<Link
-						to="/signup"
-						search={{ redirect: "/" }}
-						className="btn-primary px-7 py-3 text-base"
-					>
-						{m.hero_cta_primary()}
-					</Link>
-					<a href="#how" className="btn-secondary px-7 py-3 text-base">
-						{m.hero_cta_secondary()}
-					</a>
-				</motion.div>
+				<Reveal delay={0.24}>
+					<div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+						<Link
+							to="/signup"
+							search={{ redirect: "/" }}
+							className="btn-primary px-7 py-3 text-base"
+						>
+							{m.hero_cta_primary()}
+						</Link>
+						<a href="#how" className="btn-secondary px-7 py-3 text-base">
+							{m.hero_cta_secondary()}
+						</a>
+					</div>
+				</Reveal>
 
-				<motion.p
-					{...fadeUp}
-					transition={{ ...fadeUp.transition, delay: 0.3 }}
-					className="mt-4 text-xs text-neutral-500"
-				>
-					{m.hero_no_card()}
-				</motion.p>
+				<Reveal delay={0.3}>
+					<p className="mt-4 text-xs text-neutral-500">{m.hero_no_card()}</p>
+				</Reveal>
 
-				<motion.div
-					{...fadeUp}
-					transition={{ ...fadeUp.transition, delay: 0.36 }}
-					className="mt-16"
-				>
-					<ProductMock />
-				</motion.div>
+				<Reveal delay={0.36}>
+					<div className="mt-16">
+						<ProductMock />
+					</div>
+				</Reveal>
 			</div>
 		</section>
+	);
+}
+
+/** CSS-only fade-up reveal; replaces the old framer-motion fadeUp variant. */
+function Reveal({
+	delay = 0,
+	children,
+}: {
+	delay?: number;
+	children: React.ReactNode;
+}) {
+	return (
+		<div
+			className="reveal"
+			style={delay ? { animationDelay: `${delay}s` } : undefined}
+		>
+			{children}
+		</div>
 	);
 }
 

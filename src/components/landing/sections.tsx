@@ -1,7 +1,26 @@
-import { motion } from "framer-motion";
-
-import { fadeUp } from "#/components/landing/hero";
 import { m } from "#/paraglide/messages";
+
+// Landing animations are pure CSS (Interpolate keyframes in styles.css) instead
+// of framer-motion: motion sets opacity:0 until JS hydrates, which delayed the
+// hero H1 (the LCP element) by ~1.5s. CSS reveals content with zero JS.
+export function Reveal({
+	delay = 0,
+	className = "",
+	children,
+}: {
+	delay?: number;
+	className?: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<div
+			className={`reveal ${className}`}
+			style={delay ? { animationDelay: `${delay}s` } : undefined}
+		>
+			{children}
+		</div>
+	);
+}
 
 export function SectionHeading({
 	title,
@@ -11,14 +30,14 @@ export function SectionHeading({
 	subtitle?: string;
 }) {
 	return (
-		<motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
+		<Reveal className="mx-auto max-w-2xl text-center">
 			<h2 className="section-title">{title}</h2>
 			{subtitle && (
 				<p className="mt-4 text-base leading-relaxed text-neutral-400">
 					{subtitle}
 				</p>
 			)}
-		</motion.div>
+		</Reveal>
 	);
 }
 
@@ -51,10 +70,9 @@ export function Features() {
 			/>
 			<div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 				{features.map((f, i) => (
-					<motion.div
+					<Reveal
 						key={f.title}
-						{...fadeUp}
-						transition={{ ...fadeUp.transition, delay: (i % 3) * 0.08 }}
+						delay={(i % 3) * 0.08}
 						className="card group p-6 transition-colors hover:border-neutral-700"
 					>
 						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/10 text-lg text-brand-300 transition-colors group-hover:bg-brand-500/20">
@@ -64,7 +82,7 @@ export function Features() {
 						<p className="mt-2 text-sm leading-relaxed text-neutral-400">
 							{f.desc}
 						</p>
-					</motion.div>
+					</Reveal>
 				))}
 			</div>
 		</section>
@@ -86,12 +104,7 @@ export function HowItWorks() {
 				<SectionHeading title={m.how_title()} />
 				<div className="mt-14 grid gap-10 md:grid-cols-3">
 					{steps.map((s, i) => (
-						<motion.div
-							key={s.title}
-							{...fadeUp}
-							transition={{ ...fadeUp.transition, delay: i * 0.1 }}
-							className="relative"
-						>
+						<Reveal key={s.title} delay={i * 0.1} className="relative">
 							<div className="font-display text-5xl font-bold text-neutral-800">
 								{i + 1}
 							</div>
@@ -103,7 +116,7 @@ export function HowItWorks() {
 							<p className="mt-2 text-sm leading-relaxed text-neutral-400">
 								{s.desc}
 							</p>
-						</motion.div>
+						</Reveal>
 					))}
 				</div>
 			</div>
@@ -130,7 +143,7 @@ export function Pricing() {
 				subtitle={m.pricing_subtitle()}
 			/>
 			<div className="mx-auto mt-14 grid max-w-3xl gap-6 md:grid-cols-2">
-				<motion.div {...fadeUp} className="card p-8">
+				<Reveal className="card p-8">
 					<h3 className="font-semibold text-white">{m.plan_free_name()}</h3>
 					<div className="mt-3 flex items-baseline gap-1.5">
 						<span className="font-display text-4xl font-bold text-white">
@@ -154,10 +167,9 @@ export function Pricing() {
 					<a href="#top" className="btn-secondary mt-8 w-full">
 						{m.plan_cta_free()}
 					</a>
-				</motion.div>
-				<motion.div
-					{...fadeUp}
-					transition={{ ...fadeUp.transition, delay: 0.1 }}
+				</Reveal>
+				<Reveal
+					delay={0.1}
 					className="relative rounded-2xl border border-brand-500/50 bg-gradient-to-b from-brand-950/60 to-neutral-900 p-8 shadow-[0_0_50px_-15px_rgba(61,103,241,0.4)]"
 				>
 					<span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-3 py-1 text-xs font-semibold text-white">
@@ -186,7 +198,7 @@ export function Pricing() {
 					<a href="#top" className="btn-primary mt-8 w-full">
 						{m.plan_cta_pro()}
 					</a>
-				</motion.div>
+				</Reveal>
 			</div>
 		</section>
 	);
@@ -216,10 +228,9 @@ export function Testimonials() {
 				<SectionHeading title={m.testimonials_title()} />
 				<div className="mt-14 grid gap-5 md:grid-cols-3">
 					{testimonials.map((t, i) => (
-						<motion.figure
+						<Reveal
 							key={t.name}
-							{...fadeUp}
-							transition={{ ...fadeUp.transition, delay: i * 0.1 }}
+							delay={i * 0.1}
 							className="card flex flex-col p-6"
 						>
 							<div className="text-sm text-amber-400" aria-hidden>
@@ -237,7 +248,7 @@ export function Testimonials() {
 									<div className="text-xs text-neutral-500">{t.role}</div>
 								</div>
 							</figcaption>
-						</motion.figure>
+						</Reveal>
 					))}
 				</div>
 			</div>
@@ -248,10 +259,7 @@ export function Testimonials() {
 export function FinalCta() {
 	return (
 		<section className="relative mx-auto max-w-6xl overflow-hidden px-6 py-24">
-			<motion.div
-				{...fadeUp}
-				className="relative overflow-hidden rounded-3xl border border-brand-500/30 bg-gradient-to-b from-brand-900/40 to-neutral-900 px-8 py-16 text-center"
-			>
+			<Reveal className="relative overflow-hidden rounded-3xl border border-brand-500/30 bg-gradient-to-b from-brand-900/40 to-neutral-900 px-8 py-16 text-center">
 				<div aria-hidden className="pointer-events-none absolute inset-0">
 					<div className="absolute left-1/2 top-[-180px] h-[360px] w-[600px] -translate-x-1/2 rounded-full bg-brand-500/20 blur-[100px]" />
 				</div>
@@ -264,7 +272,7 @@ export function FinalCta() {
 						{m.cta_button()}
 					</a>
 				</div>
-			</motion.div>
+			</Reveal>
 		</section>
 	);
 }
