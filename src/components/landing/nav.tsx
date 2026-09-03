@@ -9,7 +9,9 @@ export function Logo({ className = "" }: { className?: string }) {
 			to="/"
 			className={`font-display text-lg font-bold tracking-tight text-white ${className}`}
 		>
-			resmio<span className="text-brand-400">.</span>
+			CV<span className="text-violet-400">ATS</span>
+			<span className="text-brand-400">Friendly</span>
+			<span className="text-brand-400">.</span>
 		</Link>
 	);
 }

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://cvatsfriendly.com/sitemap.xml

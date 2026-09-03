@@ -1,4 +1,17 @@
+import { Link } from "@tanstack/react-router";
+
 import { m } from "#/paraglide/messages";
+
+const FOOTER_LINKS: Record<string, Array<{ label: string; to: string }>> = {
+	Company: [
+		{ label: "About", to: "/about" },
+		{ label: "Contact", to: "/contact" },
+	],
+	Legal: [
+		{ label: "Privacy", to: "/privacy" },
+		{ label: "Terms", to: "/terms" },
+	],
+};
 
 // Landing animations are pure CSS (Interpolate keyframes in styles.css) instead
 // of framer-motion: motion sets opacity:0 until JS hydrates, which delayed the
@@ -277,21 +290,25 @@ export function FinalCta() {
 	);
 }
 
+type FooterLink = { label: string; to: string } | string;
+
 export function Footer() {
-	const cols: Array<[string, string[]]> = [
+	const cols: Array<[string, FooterLink[]]> = [
 		[
 			m.footer_product(),
 			[m.nav_features(), m.nav_pricing(), m.nav_dashboard()],
 		],
-		[m.footer_company(), [m.footer_contact()]],
-		[m.footer_legal(), [m.footer_privacy(), m.footer_terms()]],
+		[m.footer_company(), FOOTER_LINKS.Company],
+		[m.footer_legal(), FOOTER_LINKS.Legal],
 	];
 	return (
 		<footer className="border-t border-neutral-800/60">
 			<div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
 				<div>
 					<div className="font-display text-lg font-bold tracking-tight text-white">
-						resmio<span className="text-brand-400">.</span>
+						CV<span className="text-violet-400">ATS</span>
+						<span className="text-brand-400">Friendly</span>
+						<span className="text-brand-400">.</span>
 					</div>
 					<p className="mt-3 max-w-xs text-sm leading-relaxed text-neutral-500">
 						{m.footer_tagline()}
@@ -303,16 +320,30 @@ export function Footer() {
 							{heading}
 						</div>
 						<ul className="mt-4 space-y-2.5">
-							{links.map((l) => (
-								<li key={l}>
-									<a
-										href="#top"
-										className="text-sm text-neutral-500 transition-colors hover:text-neutral-200"
-									>
-										{l}
-									</a>
-								</li>
-							))}
+							{links.map((l) => {
+								const label = typeof l === "string" ? l : l.label;
+								const href = typeof l === "string" ? "#top" : l.to;
+								const isInternal = typeof l !== "string";
+								return (
+									<li key={label}>
+										{isInternal ? (
+											<Link
+												to={href as "/about"}
+												className="text-sm text-neutral-500 transition-colors hover:text-neutral-200"
+											>
+												{label}
+											</Link>
+										) : (
+											<a
+												href={href}
+												className="text-sm text-neutral-500 transition-colors hover:text-neutral-200"
+											>
+												{label}
+											</a>
+										)}
+									</li>
+								);
+							})}
 						</ul>
 					</div>
 				))}

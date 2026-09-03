@@ -10,21 +10,33 @@ import {
 	Pricing,
 	Testimonials,
 } from "#/components/landing/sections";
+import { SeoContent, SeoJsonLd } from "#/components/landing/seo";
 import { getSession } from "#/lib/auth-functions";
+import { hreflangLinks, ogMeta, robotsMeta } from "#/lib/seo";
 
 export const Route = createFileRoute("/")({
 	loader: () => getSession(),
 	head: () => ({
 		meta: [
-			{ title: "Resmio — AI Resume Builder" },
+			{ title: "cvatsfriendly — CV ATS Friendly Builder" },
 			{
 				name: "description",
 				content:
-					"Resmio uses AI to turn your experience into sharp, recruiter-ready resumes. Build, refine and export in minutes.",
+					"Build a free, ATS friendly CV with AI — recruiter-approved templates, a live ATS score against the job description and one-click PDF export that beats the bots.",
 			},
-			{ property: "og:title", content: "Resmio — AI Resume Builder" },
-			{ property: "og:type", content: "website" },
+			{
+				name: "keywords",
+				content:
+					"cv ats friendly, ats friendly cv, ats friendly resume builder, ats resume checker, cv builder",
+			},
+			...ogMeta({
+				title: "cvatsfriendly — CV ATS Friendly Builder",
+				description:
+					"Build a free, ATS friendly CV with AI — recruiter-approved templates, a live ATS score against the job description and one-click PDF export that beats the bots.",
+			}),
+			...robotsMeta(),
 		],
+		links: hreflangLinks(),
 	}),
 	component: LandingPage,
 });
@@ -41,9 +53,11 @@ function LandingPage() {
 				<HowItWorks />
 				<Pricing />
 				<Testimonials />
+				<SeoContent />
 				<FinalCta />
 			</main>
 			<Footer />
+			<SeoJsonLd url="https://cvatsfriendly.com" />
 		</div>
 	);
 }

@@ -93,7 +93,7 @@ function ProductMock() {
 				<span className="h-2.5 w-2.5 rounded-full bg-neutral-700" />
 				<span className="h-2.5 w-2.5 rounded-full bg-neutral-700" />
 				<span className="ml-3 rounded-md bg-neutral-800 px-3 py-1 text-[11px] text-neutral-500">
-					app.resmio.io/dashboard
+					app.cvatsfriendly.com/dashboard
 				</span>
 			</div>
 			<div className="grid grid-cols-[1fr_180px] gap-6 p-8 text-left sm:grid-cols-[1fr_240px]">

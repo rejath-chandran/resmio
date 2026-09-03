@@ -23,6 +23,9 @@ export const Route = createFileRoute("/signup")({
 		const session = await getSession();
 		if (session) throw redirect({ to: search.redirect });
 	},
+	head: () => ({
+		meta: [{ name: "robots", content: "noindex, follow" }],
+	}),
 	component: Signup,
 });
 

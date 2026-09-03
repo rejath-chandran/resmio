@@ -582,3 +582,33 @@ services on the existing EC2 box (avoids paid-only Browser Rendering + Hyperdriv
 `BETTER_AUTH_SECRET`, **rotate the shared GitHub OAuth secret**), point OAuth callback
 URLs at the prod origin, and `docker compose up -d` both EC2 services with matching
 tokens, restricting their ports to the Worker's egress IP.
+
+## 2026-09-04 — Rebrand to cvatsfriendly + "cv ats friendly" SEO + Bahasa locale
+
+- Rebranded Resmio → `cvatsfriendly`: logos (nav/footer), root + landing meta titles, en/de/id message files, hero mock URL (`app.cvatsfriendly.com`).
+- SEO for "cv ats friendly": landing title/description/keywords/OG now target the keyword; en copy weaves "ATS friendly CV" into hero_subtitle, features, CTA, footer tagline.
+- Added `id` (Bahasa Indonesia) locale: `messages/id.json` (full translation), added to `project.inlang/settings.json` locales, paraglide recompiled.
+- Note: "de" is German (Deutsch), not Dutch — kept as-is; add `nl` if Dutch is actually wanted.
+
+## 2026-09-04 — "cv ats friendly" SEO push + static pages
+
+- Landing: added keyword-rich SEO content section (H3s on ATS friendly CV, feature bullets, FAQ accordion) + JSON-LD (FAQPage + WebApplication) — `src/components/landing/seo.tsx`, wired into `src/routes/index.tsx`.
+- New static routes with per-page meta: `/about`, `/contact`, `/privacy`, `/terms` (privacy/terms are generic template text — ponytail: replace with counsel-reviewed copy before scale).
+- Footer Company/Legal columns now link to the real pages (were `#top` dummies).
+- SEO infra: `public/robots.txt` + `/sitemap.xml` server route (`src/routes/sitemap.xml.ts`).
+- Domain assumed: `https://cvatsfriendly.com` (meta, JSON-LD, sitemap, robots) — update if final domain differs.
+
+## 2026-09-04 — Robots directives + hreflang
+
+- `src/lib/seo.ts`: `robotsMeta()` (`index, follow, max-image-preview:large`) + `hreflangLinks(path)` — canonical, en/de/id alternates (`/{locale}{path}` per Paraglide rewrite), x-default.
+- Landing: robots meta + hreflang set in route `head()`. Static pages: same via `StaticShell` (now takes `path` prop).
+- `/login` + `/signup`: `noindex, follow`.
+- `src/start.ts`: global `X-Robots-Tag: index, follow` header via server middleware (skipped for `/dashboard*`).
+- `public/robots.txt` (file) + `/sitemap.xml` (server route) from earlier — sitemap still single-locale; add /{locale} URLs when localized routes ship.
+
+## 2026-09-04 — Complete Open Graph + Twitter cards
+
+- `src/lib/seo.ts`: added `ogMeta({title, description, path})` — full set: og:title/description/url/type/site_name/image(+1200x630 dims, alt) + twitter:card/title/description/image/alt.
+- Wired into landing `head()` (replaced the 3 partial og tags) and `StaticShell` (all static pages).
+- Created `public/og-image.png` (1200x630 brand card, generated with Pillow).
+- Landing meta description tuned to exactly 160 chars.

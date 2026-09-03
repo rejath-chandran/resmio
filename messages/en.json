@@ -11,7 +11,7 @@
 	"hero_badge": "AI-powered resume builder",
 	"hero_title_1": "Land your next role with a resume",
 	"hero_title_highlight": "that gets you noticed",
-	"hero_subtitle": "Resmio uses AI to turn your experience into sharp, recruiter-ready resumes. Build, refine and export in minutes — not hours.",
+	"hero_subtitle": "cvatsfriendly uses AI to turn your experience into sharp, recruiter-ready, ATS-friendly CVs. Build, refine and export in minutes — not hours.",
 	"hero_cta_primary": "Start building free",
 	"hero_cta_secondary": "See how it works",
 	"hero_no_card": "No credit card required",
@@ -20,7 +20,7 @@
 	"hero_stat_speed": "Avg. time to export",
 
 	"features_title": "Everything you need to stand out",
-	"features_subtitle": "From blank page to interview-ready, Resmio handles the hard parts.",
+	"features_subtitle": "From blank page to interview-ready, cvatsfriendly handles the hard parts.",
 	"feature_ai_title": "AI writing assistant",
 	"feature_ai_desc": "Turn weak bullet points into achievements with quantified, action-driven rewrites.",
 	"feature_templates_title": "Recruiter-approved templates",
@@ -32,7 +32,7 @@
 	"feature_privacy_title": "Private by default",
 	"feature_privacy_desc": "Your data belongs to you. Export or delete your resumes at any time.",
 	"feature_i18n_title": "Built for global job hunts",
-	"feature_i18n_desc": "Write in English or German and switch instantly as your search crosses borders.",
+	"feature_i18n_desc": "Write in English, German or Bahasa Indonesia and switch instantly as your search crosses borders.",
 
 	"how_title": "Three steps to a better resume",
 	"how_step1_title": "Sign up & pick a template",
@@ -75,7 +75,7 @@
 	"testimonial_3_role": "Data Analyst",
 
 	"cta_title": "Ready to land more interviews?",
-	"cta_subtitle": "Join thousands of job seekers who upgraded their resume with Resmio.",
+	"cta_subtitle": "Join thousands of job seekers who upgraded their resume with cvatsfriendly.",
 	"cta_button": "Build my resume — free",
 
 	"footer_product": "Product",
@@ -85,7 +85,7 @@
 	"footer_terms": "Terms",
 	"footer_contact": "Contact",
 	"footer_tagline": "The AI resume builder for people who'd rather be interviewing.",
-	"footer_rights": "© {year} Resmio. All rights reserved.",
+	"footer_rights": "© {year} cvatsfriendly. All rights reserved.",
 
 	"auth_login_title": "Welcome back",
 	"auth_login_subtitle": "Log in to continue building your resume.",

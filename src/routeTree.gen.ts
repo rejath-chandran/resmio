@@ -12,9 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ApiPdfRouteImport } from './routes/api/pdf'
+import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin.index'
 import { Route as AdminAdminJobsRouteImport } from './routes/_admin/admin.jobs'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
@@ -42,9 +47,24 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -52,9 +72,19 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPdfRoute = ApiPdfRouteImport.update({
   id: '/api/pdf',
   path: '/api/pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapXmlRoute = SitemapXmlRouteImport.update({
+  id: '/sitemap/xml',
+  path: '/sitemap/xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
@@ -132,9 +162,14 @@ const AdminAdminTemplatesTemplateIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/admin/jobs': typeof AdminAdminJobsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
@@ -151,9 +186,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/admin/jobs': typeof AdminAdminJobsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
@@ -173,9 +213,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_admin': typeof AdminRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/about': typeof AboutRoute
+  '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/api/pdf': typeof ApiPdfRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/_admin/admin/jobs': typeof AdminAdminJobsRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_authenticated/dashboard/$resumeId': typeof AuthenticatedDashboardResumeIdRoute
@@ -194,9 +239,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
+    | '/contact'
     | '/login'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/api/pdf'
+    | '/sitemap/xml'
     | '/admin/jobs'
     | '/admin/users'
     | '/dashboard/$resumeId'
@@ -213,9 +263,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
+    | '/contact'
     | '/login'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/api/pdf'
+    | '/sitemap/xml'
     | '/admin/jobs'
     | '/admin/users'
     | '/dashboard/$resumeId'
@@ -234,9 +289,14 @@ export interface FileRouteTypes {
     | '/'
     | '/_admin'
     | '/_authenticated'
+    | '/about'
+    | '/contact'
     | '/login'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/api/pdf'
+    | '/sitemap/xml'
     | '/_admin/admin/jobs'
     | '/_admin/admin/users'
     | '/_authenticated/dashboard/$resumeId'
@@ -256,9 +316,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AboutRoute: typeof AboutRoute
+  ContactRoute: typeof ContactRoute
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
+  TermsRoute: typeof TermsRoute
   ApiPdfRoute: typeof ApiPdfRoute
+  SitemapXmlRoute: typeof SitemapXmlRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCashfreeWebhookRoute: typeof ApiCashfreeWebhookRoute
 }
@@ -286,11 +351,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -300,11 +386,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/pdf': {
       id: '/api/pdf'
       path: '/api/pdf'
       fullPath: '/api/pdf'
       preLoaderRoute: typeof ApiPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap/xml': {
+      id: '/sitemap/xml'
+      path: '/sitemap/xml'
+      fullPath: '/sitemap/xml'
+      preLoaderRoute: typeof SitemapXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_admin/admin/': {
@@ -445,9 +545,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AboutRoute: AboutRoute,
+  ContactRoute: ContactRoute,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
+  TermsRoute: TermsRoute,
   ApiPdfRoute: ApiPdfRoute,
+  SitemapXmlRoute: SitemapXmlRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCashfreeWebhookRoute: ApiCashfreeWebhookRoute,
 }
